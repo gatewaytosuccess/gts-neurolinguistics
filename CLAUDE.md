@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a fullstack web application. It's purpose is to serve as a learning platform for neurolinguistics through online courses, as well as marketand sell these courses. There's two main views - a user view and an admin view (admins upload/edit/delete courses).
+This is a fullstack web application. It's purpose is to serve as a learning platform for neurolinguistics through online courses, as well as to market and sell these courses. There's two main views - a user view (users can signup, buy courses, view courses, progress through owned courses, etc...) and an admin view (admins can upload/edit/delete courses).
 
 ## Tech Stack
 
-**Backend**: Python + Django
-**Frontend**: Typescript + Next.js
-**Database**: PostgreSQL on Amazon RDS
-**Object storage**: Amazon S3
+**Backend**: Python + Django\
+**Frontend**: Typescript + Next.js\
+**Database**: PostgreSQL on Amazon RDS\
+**Object storage**: Amazon S3\
 **Auth**: Clerk
 
 ## Backend (`api/`)
@@ -28,5 +28,5 @@ See `SCHEMA.md` at the root of the project.
 
 ## Other Files
 
-`SPEC.md` - a high level spec of the project. Free to change if a better alternative to anything in the spec exists.
+`SPEC.md` - a high level spec of the project. Free to change if a better alternative to anything in the spec exists.\
 `DESIGN.md` - a design for the frontend visuals.
