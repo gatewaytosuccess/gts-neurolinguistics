@@ -1,14 +1,6 @@
 """
-User accounts.
-
-Clerk is the source of truth for identity: it owns sign-up, sign-in, email
-verification, password reset and social login. This model is the local mirror
-of a Clerk user, keyed by ``clerk_user_id``, and carries the platform-specific
-fields (role, suspension state) that Clerk knows nothing about.
-
-Django's password field is inherited from ``AbstractBaseUser`` and is left
-unusable for learners; it exists so a superuser created with
-``createsuperuser`` can log into /admin/.
+``User`` mirrors a Clerk user. Only role and status belong to this app; Clerk
+overwrites everything else.
 """
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -25,9 +17,16 @@ class Role(models.TextChoices):
 
 
 class UserStatus(models.TextChoices):
+    """``suspended`` and ``banned`` are cleared only by an admin.
+
+    ``deleted`` means the user deleted their Clerk account; signing up again
+    with the same email reactivates the row. ``users.sync`` enforces both.
+    """
+
     ACTIVE = "active", "Active"
     SUSPENDED = "suspended", "Suspended"
     BANNED = "banned", "Banned"
+    DELETED = "deleted", "Deleted"
 
 
 class UserManager(BaseUserManager):
@@ -85,7 +84,7 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_active(self):
-        """Anything other than ``active`` blocks login (SCHEMA.md)."""
+        """Any status but ``active`` blocks login, /admin/ included."""
         return self.status == UserStatus.ACTIVE
 
     @property
@@ -101,6 +100,10 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
         self.suspended_at = timezone.now()
         self.suspension_reason = reason
         self.save(update_fields=["status", "suspended_at", "suspension_reason", "updated_at"])
+
+    @property
+    def is_deleted(self):
+        return self.status == UserStatus.DELETED
 
     def reinstate(self):
         self.status = UserStatus.ACTIVE

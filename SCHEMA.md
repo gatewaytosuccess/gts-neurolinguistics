@@ -23,19 +23,24 @@
 
 ### USERS
 
-| Column            | Type      | Key / Constraints           | Notes                                                                       |
-| ----------------- | --------- | --------------------------- | --------------------------------------------------------------------------- |
-| id                | uuid      | PK                          |                                                                             |
-| clerk_user_id     | string    | UK, not null                |                                                                             |
-| email             | string    | UK, not null                |                                                                             |
-| name              | string    | not null                    |                                                                             |
-| avatar_url        | string    | nullable                    |                                                                             |
-| role              | enum      | not null, default `learner` | `learner \| instructor \| admin`                                            |
-| status            | enum      | not null, default `active`  | `active \| suspended \| banned` — anything other than `active` blocks login |
-| suspended_at      | timestamp | nullable                    | Set when a user is suspended or banned                                      |
-| suspension_reason | string    | nullable                    | Admin audit note                                                            |
-| created_at        | timestamp | not null                    |                                                                             |
-| updated_at        | timestamp | not null                    |                                                                             |
+| Column            | Type      | Key / Constraints           | Notes                                                                                             |
+| ----------------- | --------- | --------------------------- | ------------------------------------------------------------------------------------------------- |
+| id                | uuid      | PK                          |                                                                                                   |
+| clerk_user_id     | string    | UK, not null                |                                                                                                   |
+| email             | string    | UK, not null                |                                                                                                   |
+| name              | string    | not null                    |                                                                                                   |
+| avatar_url        | string    | nullable                    |                                                                                                   |
+| role              | enum      | not null, default `learner` | `learner \| instructor \| admin`                                                                  |
+| status            | enum      | not null, default `active`  | `active \| suspended \| banned \| deleted` — anything other than `active` blocks login. See below |
+| suspended_at      | timestamp | nullable                    | Set when a user is suspended or banned                                                            |
+| suspension_reason | string    | nullable                    | Admin audit note                                                                                  |
+| created_at        | timestamp | not null                    |                                                                                                   |
+| updated_at        | timestamp | not null                    |                                                                                                   |
+
+Account status splits along one axis: who can clear it.
+
+- `suspended` / `banned` are imposed by an admin and only an admin lifts them. Deleting the Clerk account does not clear them, and signing up again with the same email is refused rather than granted.
+- `deleted` is self-service: the user deleted their Clerk account. The row survives — it is the foreign key target for enrollments, orders and reviews — with `clerk_user_id` released. Signing up again with the same email resurrects it, enrollments intact.
 
 ### COURSES
 

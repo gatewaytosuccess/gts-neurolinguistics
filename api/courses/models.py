@@ -1,5 +1,3 @@
-"""Course content: Course -> Module -> Lesson"""
-
 from django.conf import settings
 from django.db import models
 

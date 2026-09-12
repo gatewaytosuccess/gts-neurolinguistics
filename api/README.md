@@ -22,7 +22,7 @@ api/
       prod.py        RDS + TLS + security headers
     urls.py          / admin/ and /api/
   common/            UUID + timestamp base models, /api/health/
-  users/             custom User model, Clerk JWT authentication
+  users/             custom User model, Clerk JWT authentication, Clerk webhook
   courses/           Course -> Module -> Lesson
   enrollments/       Enrollment, LessonProgress
   commerce/          Cart, CartItem, Order, OrderItem, Coupon
@@ -31,8 +31,8 @@ api/
   .env               local secrets (gitignored) — see .env.example
 ```
 
-Models follow `../SCHEMA.md`. No serializers, views or routes exist yet beyond
-the health check.
+Models follow `../SCHEMA.md`. Beyond the health check, the only routes so far
+are the ones sign-up needs: `/api/users/me/` and the Clerk webhook.
 
 ## Setup
 
@@ -40,7 +40,7 @@ The virtualenv already exists at `api/.venv`. To recreate it:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 Copy `.env.example` to `.env` and fill in the Clerk and AWS values. A dev
@@ -70,7 +70,22 @@ Then point `DATABASE_URL` in `.env` at it and apply migrations:
 ```
 
 - `GET /api/health/` — liveness plus a database connection check
+- `GET /api/users/me/` — the signed-in user's account row
+- `POST /api/webhooks/clerk/` — Clerk `user.*` events, Svix-signed
 - `/admin/` — Django admin (superuser password login; unrelated to Clerk)
+
+## Tests
+
+```bash
+.venv/bin/python -m pytest
+```
+
+pytest-django builds a throwaway database, so the role in `DATABASE_URL` needs
+`CREATEDB`:
+
+```bash
+sudo -u postgres psql -c 'ALTER ROLE myuser CREATEDB;'
+```
 
 Settings default to `config.settings.dev`. Production sets
 `DJANGO_SETTINGS_MODULE=config.settings.prod`.
@@ -81,14 +96,30 @@ The frontend sends the Clerk session token as `Authorization: Bearer <jwt>`.
 `users.authentication.ClerkAuthentication` verifies it against Clerk's JWKS and
 resolves the local `User` row by `clerk_user_id`.
 
-Two things to finish on the Clerk side:
+Local `users` rows are written from two places, both of which copy *from*
+Clerk and both of which go through `users.sync` so they cannot disagree:
 
-1. Add `email` (and ideally `name`, `image_url`) to the session token via
-   Clerk's JWT template, so a user hitting the API for the first time can be
-   provisioned locally.
-2. Add a Clerk webhook syncing `user.created` / `user.updated` / `user.deleted`.
-   That is the durable sync path; the lazy creation in the auth class is a
-   stopgap.
+1. **`POST /api/webhooks/clerk/`** — the durable path. Subscribe the endpoint to
+   `user.created`, `user.updated` and `user.deleted` in the Clerk dashboard and
+   put its signing secret in `CLERK_WEBHOOK_SIGNING_SECRET`.
+
+   **Not configured yet** (issue #2): Clerk cannot reach `localhost`, so this
+   waits until the API has a public host. With the secret unset the endpoint
+   answers 503 rather than trusting an unverified payload, and account changes
+   made in Clerk — a deletion, an email change — do not reach the mirror. Sign-up
+   itself is unaffected, because provisioning falls through to (2). To exercise
+   it locally anyway, put a tunnel (`cloudflared tunnel --url http://localhost:8000`)
+   in front and point the dashboard endpoint at that.
+2. **Just-in-time provisioning** in `ClerkAuthentication` — covers the seconds
+   between Clerk redirecting a brand-new user into the app and the
+   `user.created` delivery landing. It needs `email` (and ideally `name`,
+   `image_url`) in the token claims: add them under *Configure → Sessions →
+   Customize session token*, **not** a named JWT template, since `getToken()`
+   without a template argument returns the default session token.
+
+The table is a read-only mirror — see `../docs/adr/0001-clerk-owns-identity.md`
+for why there is no endpoint to edit a profile, and `users/sync.py` for the
+rules on deleted, suspended and banned accounts.
 
 DRF defaults to `IsAuthenticated`, so new views are private unless they opt out
 with `AllowAny` (public catalog, preview lessons, blog).

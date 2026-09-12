@@ -1,26 +1,181 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Token names match DESIGN.md one-for-one.
+ *
+ * No dark mode outside the lesson dashboard.
+ */
+
+@theme {
+  /* Brand core: shared with the GTS credit-services site */
+  --color-primary: #0a2463;
+  --color-primary-strong: #070d41;
+  --color-primary-subtle: #accbe1;
+  --color-primary-pale: #cee5f2;
+  --color-primary-muted: #7c98b3;
+  --color-accent: #3c362a;
+  --color-accent-strong: #261e0f;
+  --color-paper: #f6f3ee;
+  --color-paper-raised: #fcfaf6;
+  --color-paper-dim: #dbd7d0;
+  --color-rule: #c1bdb5;
+  --color-border-strong: #857f74;
+  --color-meta-text: #4a5a68;
+  --color-error: #a12f2f;
+  --color-error-subtle: #ffe3df;
+  --color-success: #225a31;
+  --color-success-subtle: #dbeede;
+  --color-warning: #6e4200;
+  --color-warning-subtle: #f7e5cf;
+
+  /* Brass Seal: the only color that means "click this" */
+  --color-tertiary: #db9e38;
+  --color-tertiary-strong: #925100;
+  --color-tertiary-pale: #f5e6ce;
+
+  /* Display is for headlines and quotes only */
+  --font-display: var(--font-fraunces), "Source Serif 4", Georgia, serif;
+  --font-sans: var(--font-source-sans), -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-gutter: 24px;
+  --spacing-margin: 64px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Keep `opsz` equal to each level's font-size in px. */
+
+@utility type-display {
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variation-settings: "wght" 600, "SOFT" 40, "WONK" 0, "opsz" 96;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@utility type-headline-lg {
+  font-family: var(--font-display);
+  font-size: 60px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  font-variation-settings: "wght" 600, "SOFT" 40, "WONK" 0, "opsz" 60;
+}
+
+@utility type-headline-md {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variation-settings: "wght" 600, "SOFT" 35, "WONK" 0, "opsz" 42;
+}
+
+@utility type-headline-sm {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  font-variation-settings: "wght" 600, "SOFT" 30, "WONK" 0, "opsz" 30;
+}
+
+@utility type-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.35;
+  font-variation-settings: "wght" 500, "SOFT" 55, "opsz" 26;
+}
+
+@utility type-body-lg {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+@utility type-body-md {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+@utility type-body-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+@utility type-label-lg {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+@utility type-label-md {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+@utility type-label-caps {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-feature-settings: "case" 1;
+}
+
+@utility type-caption {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+@utility type-data-md {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-feature-settings: "tnum" 1;
+}
+
+@utility measure {
+  max-width: 68ch;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-accent-strong);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.65;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Meets 3:1 non-text contrast on every light surface. */
+  :focus-visible {
+    outline: 1px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }

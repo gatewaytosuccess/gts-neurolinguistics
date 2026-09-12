@@ -1,10 +1,4 @@
-"""
-Settings shared by every environment.
-
-Environment-specific modules (``dev``, ``prod``) import from here and override.
-Values come from the environment; ``api/.env`` is loaded for local development.
-See ``.env.example`` for the full list.
-"""
+"""See ``.env.example`` for every variable read here."""
 
 from pathlib import Path
 
@@ -88,7 +82,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# Database -- PostgreSQL locally and on Amazon RDS.
 DATABASES = {
     "default": dj_database_url.config(
         env="DATABASE_URL",
@@ -99,9 +92,7 @@ DATABASES = {
 
 AUTH_USER_MODEL = "users.User"
 
-# Clerk owns sign-up, sign-in and password reset; Django only verifies the
-# session JWTs it issues. Django's own password hashing is kept solely so
-# superusers can reach /admin/.
+# Only superusers have Django passwords (for /admin/); Clerk owns the rest.
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -121,14 +112,13 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
 }
 
-# Clerk (https://clerk.com) -- values from the Clerk dashboard.
 CLERK_SECRET_KEY = env("CLERK_SECRET_KEY", "")
 CLERK_JWKS_URL = env("CLERK_JWKS_URL", "")
 CLERK_ISSUER = env("CLERK_ISSUER", "")
 CLERK_AUTHORIZED_PARTIES = env_list("CLERK_AUTHORIZED_PARTIES")
 CLERK_JWKS_CACHE_SECONDS = int(env("CLERK_JWKS_CACHE_SECONDS", "3600"))
+CLERK_WEBHOOK_SIGNING_SECRET = env("CLERK_WEBHOOK_SIGNING_SECRET", "")
 
-# Next.js frontend.
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "http://localhost:3000")
@@ -141,7 +131,6 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Amazon S3 holds lesson media (video, slides, downloadable resources).
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", "")
 AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", "")
 
