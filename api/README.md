@@ -101,9 +101,15 @@ Clerk and both of which go through `users.sync` so they cannot disagree:
 
 1. **`POST /api/webhooks/clerk/`** — the durable path. Subscribe the endpoint to
    `user.created`, `user.updated` and `user.deleted` in the Clerk dashboard and
-   put its signing secret in `CLERK_WEBHOOK_SIGNING_SECRET`. Webhooks cannot
-   reach `localhost`, so test it with the dashboard's test-send or an ngrok
-   tunnel.
+   put its signing secret in `CLERK_WEBHOOK_SIGNING_SECRET`.
+
+   **Not configured yet** (issue #2): Clerk cannot reach `localhost`, so this
+   waits until the API has a public host. With the secret unset the endpoint
+   answers 503 rather than trusting an unverified payload, and account changes
+   made in Clerk — a deletion, an email change — do not reach the mirror. Sign-up
+   itself is unaffected, because provisioning falls through to (2). To exercise
+   it locally anyway, put a tunnel (`cloudflared tunnel --url http://localhost:8000`)
+   in front and point the dashboard endpoint at that.
 2. **Just-in-time provisioning** in `ClerkAuthentication` — covers the seconds
    between Clerk redirecting a brand-new user into the app and the
    `user.created` delivery landing. It needs `email` (and ideally `name`,
