@@ -99,6 +99,8 @@ class ClerkAuthentication(authentication.BaseAuthentication):
             if not user.clerk_user_id:
                 user.clerk_user_id = clerk_user_id
                 user.save(update_fields=["clerk_user_id", "updated_at"])
+            elif user.clerk_user_id != clerk_user_id:
+                raise exceptions.AuthenticationFailed("Email is already linked to another account.")
 
         if user.status != UserStatus.ACTIVE:
             raise exceptions.AuthenticationFailed(f"Account is {user.status}.")
