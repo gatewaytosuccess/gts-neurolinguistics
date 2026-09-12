@@ -5,11 +5,16 @@ The Next.js frontend sends the Clerk session token as ``Authorization: Bearer
 <jwt>``. We verify it against Clerk's JWKS (RS256, cached), then resolve the
 local mirror of that Clerk user.
 
-Local rows are created lazily the first time a Clerk user calls the API, which
-requires ``email`` in the token claims -- add it to the session token via
-Clerk's JWT template ("Customize session token"). A Clerk webhook that syncs
-user.created / user.updated is the durable path and will replace this
-lazy creation once it exists.
+The Clerk webhook in ``users.webhooks`` is the durable way local rows get
+written. This module keeps a just-in-time fallback for one specific gap: Clerk
+redirects a brand-new user into the app the instant they finish signing up,
+which can be before the ``user.created`` delivery lands. Provisioning here
+means that user's first API call works anyway.
+
+Both paths go through ``users.sync`` so they cannot disagree about who may be
+linked to whom. JIT provisioning needs ``email`` in the token claims -- add it
+under Clerk's "Customize session token", not a named JWT template, since
+``getToken()`` without a template argument returns the default session token.
 """
 
 import logging
@@ -19,6 +24,7 @@ from django.conf import settings
 from rest_framework import authentication, exceptions
 
 from .models import User, UserStatus
+from .sync import MirrorConflict, mirror_user
 
 logger = logging.getLogger(__name__)
 
@@ -88,19 +94,18 @@ class ClerkAuthentication(authentication.BaseAuthentication):
                 raise exceptions.AuthenticationFailed(
                     "Unknown Clerk user and no email claim to provision one with."
                 )
-            user, _ = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    "clerk_user_id": clerk_user_id,
-                    "name": claims.get("name", "") or "",
-                    "avatar_url": claims.get("image_url", "") or "",
-                },
-            )
-            if not user.clerk_user_id:
-                user.clerk_user_id = clerk_user_id
-                user.save(update_fields=["clerk_user_id", "updated_at"])
-            elif user.clerk_user_id != clerk_user_id:
-                raise exceptions.AuthenticationFailed("Email is already linked to another account.")
+            try:
+                user = mirror_user(
+                    clerk_user_id=clerk_user_id,
+                    email=email,
+                    name=claims.get("name") or "",
+                    avatar_url=claims.get("image_url") or "",
+                )
+            except MirrorConflict as exc:
+                logger.warning("Refused to provision Clerk user %s: %s", clerk_user_id, exc)
+                raise exceptions.AuthenticationFailed(
+                    "This email is already linked to another account."
+                )
 
         if user.status != UserStatus.ACTIVE:
             raise exceptions.AuthenticationFailed(f"Account is {user.status}.")

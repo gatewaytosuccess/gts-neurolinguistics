@@ -25,9 +25,18 @@ class Role(models.TextChoices):
 
 
 class UserStatus(models.TextChoices):
+    """Account states.
+
+    ``suspended`` and ``banned`` are imposed by an admin and only an admin
+    clears them. ``deleted`` is the opposite: the user deleted their own Clerk
+    account, and signing up again with the same email brings the row back. See
+    ``users.sync`` for the rules that keep those two apart.
+    """
+
     ACTIVE = "active", "Active"
     SUSPENDED = "suspended", "Suspended"
     BANNED = "banned", "Banned"
+    DELETED = "deleted", "Deleted"
 
 
 class UserManager(BaseUserManager):
@@ -101,6 +110,10 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
         self.suspended_at = timezone.now()
         self.suspension_reason = reason
         self.save(update_fields=["status", "suspended_at", "suspension_reason", "updated_at"])
+
+    @property
+    def is_deleted(self):
+        return self.status == UserStatus.DELETED
 
     def reinstate(self):
         self.status = UserStatus.ACTIVE

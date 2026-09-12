@@ -127,6 +127,8 @@ CLERK_JWKS_URL = env("CLERK_JWKS_URL", "")
 CLERK_ISSUER = env("CLERK_ISSUER", "")
 CLERK_AUTHORIZED_PARTIES = env_list("CLERK_AUTHORIZED_PARTIES")
 CLERK_JWKS_CACHE_SECONDS = int(env("CLERK_JWKS_CACHE_SECONDS", "3600"))
+# Svix signing secret for the user.* webhook (Clerk dashboard -> Webhooks).
+CLERK_WEBHOOK_SIGNING_SECRET = env("CLERK_WEBHOOK_SIGNING_SECRET", "")
 
 # Next.js frontend.
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
