@@ -8,11 +8,7 @@ export const metadata: Metadata = {
   title: "Create your account",
 };
 
-/*
- * The catch-all segment is required by Clerk's prebuilt component, which
- * routes its own sub-steps — email verification, the OAuth callback — beneath
- * this path.
- */
+// Catch-all segment: Clerk routes its own sub-steps (verification, OAuth callback) beneath this path.
 export default function SignUpPage() {
   return (
     <>

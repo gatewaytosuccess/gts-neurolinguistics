@@ -1,15 +1,6 @@
 """
-Clerk webhook receiver.
-
-Clerk delivers ``user.*`` events here through Svix. This is the durable half of
-the mirror: a session token only ever describes the person presenting it, so
-deletions and edits made elsewhere arrive only as events.
-
-Retries are the reason almost everything below returns 200. Svix retries any
-non-2xx for days, so a response code is only useful for the failures a retry
-could actually fix (a signature that didn't verify, a body that isn't JSON).
-A collision between two accounts is not one of those: it will still collide on
-the tenth delivery, so it is logged loudly and acknowledged.
+Svix retries any non-2xx for days. Return one only for a rejected request; a
+``MirrorConflict`` never resolves on retry, so it is logged and answered 200.
 """
 
 import json
@@ -34,7 +25,6 @@ SVIX_HEADERS = ("svix-id", "svix-timestamp", "svix-signature")
 @authentication_classes([])
 @permission_classes([AllowAny])
 def clerk_webhook(request):
-    """Receive ``user.created`` / ``user.updated`` / ``user.deleted`` from Clerk."""
     secret = settings.CLERK_WEBHOOK_SIGNING_SECRET
     if not secret:
         logger.error("CLERK_WEBHOOK_SIGNING_SECRET is not configured; rejecting webhook.")
@@ -62,8 +52,7 @@ def clerk_webhook(request):
     }.get(event_type)
 
     if handler is None:
-        # Clerk sends whatever the endpoint is subscribed to; anything we did
-        # not ask for is still a successful delivery.
+        # Acknowledged so Svix doesn't retry event types this app doesn't handle.
         logger.debug("Ignoring unhandled Clerk event %s.", event_type)
         return Response({"status": "ignored", "type": event_type})
 

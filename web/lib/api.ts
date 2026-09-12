@@ -1,12 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 
-/*
- * The browser never talks to Django directly.
- *
- * Every call is made from the server with the Clerk session token attached, so
- * the token stays out of the bundle, the API's address stays a server-only
- * secret, and CORS never enters into it.
- */
+// Server-only: the browser never calls Django directly.
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://127.0.0.1:8000";
 
 export class ApiError extends Error {
@@ -51,11 +45,8 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 /**
- * The signed-in user's account row, or `null` if nobody is signed in.
- *
- * Also what closes the gap right after sign-up: Clerk redirects a new user
- * into the app before the `user.created` webhook necessarily lands, and this
- * endpoint provisions their row on the spot if it has not.
+ * `null` if nobody is signed in. Throws if the API is unreachable or returns
+ * non-2xx. Safe right after sign-up: the API provisions a missing row.
  */
 export async function fetchCurrentUser(): Promise<CurrentUser | null> {
   const { userId } = await auth();

@@ -1,14 +1,6 @@
 """
-User accounts.
-
-Clerk is the source of truth for identity: it owns sign-up, sign-in, email
-verification, password reset and social login. This model is the local mirror
-of a Clerk user, keyed by ``clerk_user_id``, and carries the platform-specific
-fields (role, suspension state) that Clerk knows nothing about.
-
-Django's password field is inherited from ``AbstractBaseUser`` and is left
-unusable for learners; it exists so a superuser created with
-``createsuperuser`` can log into /admin/.
+``User`` mirrors a Clerk user. Only role and status belong to this app; Clerk
+overwrites everything else.
 """
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -25,12 +17,10 @@ class Role(models.TextChoices):
 
 
 class UserStatus(models.TextChoices):
-    """Account states.
+    """``suspended`` and ``banned`` are cleared only by an admin.
 
-    ``suspended`` and ``banned`` are imposed by an admin and only an admin
-    clears them. ``deleted`` is the opposite: the user deleted their own Clerk
-    account, and signing up again with the same email brings the row back. See
-    ``users.sync`` for the rules that keep those two apart.
+    ``deleted`` means the user deleted their Clerk account; signing up again
+    with the same email reactivates the row. ``users.sync`` enforces both.
     """
 
     ACTIVE = "active", "Active"
@@ -94,7 +84,7 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_active(self):
-        """Anything other than ``active`` blocks login (SCHEMA.md)."""
+        """Any status but ``active`` blocks login, /admin/ included."""
         return self.status == UserStatus.ACTIVE
 
     @property

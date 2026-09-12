@@ -1,12 +1,10 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 /*
- * Runs Clerk's request handling so `auth()` works in server components.
+ * Required for `auth()` in server components.
  *
- * Route protection deliberately does not happen here. Matching paths in a
- * proxy can diverge from how Next actually routes a request, which leaves
- * protected data reachable; each page and route handler checks its own access
- * instead — see `app/page.tsx`.
+ * Don't protect routes here: proxy path matching can diverge from Next's
+ * routing. Each page and route handler checks its own access.
  */
 export default clerkMiddleware();
 

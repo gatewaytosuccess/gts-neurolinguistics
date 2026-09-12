@@ -1,9 +1,4 @@
-"""
-Course ratings and written reviews.
-
-Eligibility (reviewer must be enrolled) is enforced in application logic, not
-by a database constraint as of now.
-"""
+"""The database does not check that a reviewer is enrolled; callers must."""
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator

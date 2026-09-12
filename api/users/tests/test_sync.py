@@ -1,5 +1,3 @@
-"""The mirroring rules -- the ones that are easy to get quietly wrong."""
-
 import pytest
 
 from users.models import Role, User, UserStatus

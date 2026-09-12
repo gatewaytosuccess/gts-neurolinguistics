@@ -1,5 +1,3 @@
-"""``GET /api/users/me`` -- what the frontend reads, and what it must not."""
-
 import pytest
 from django.urls import reverse
 
@@ -11,11 +9,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def clerk_session(monkeypatch):
-    """Stand in for a verified Clerk session token.
-
-    Only JWKS verification is stubbed; everything downstream of it -- the
-    just-in-time provisioning, the status check -- runs for real.
-    """
+    """Stubs only token verification; provisioning and the status check run for real."""
 
     def use(**claims):
         monkeypatch.setattr(

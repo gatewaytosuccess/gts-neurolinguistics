@@ -1,15 +1,8 @@
-/*
- * DESIGN.md, expressed in Clerk's appearance vocabulary, so the prebuilt cards
- * match the page chrome they sit in.
- *
- * Two values below look like mistakes and are not: the card carries no shadow,
- * because DESIGN.md gives those only to dropdowns, modals and tooltips; and
- * the primary button takes dark ink rather than white, which manages only
- * 2.3:1 against a mid-lightness gold.
- */
+// Hex values duplicate the tokens in globals.css; keep them in sync.
 export const clerkAppearance = {
   variables: {
     colorPrimary: "#db9e38",
+    // White on this gold is only 2.3:1.
     colorPrimaryForeground: "#261e0f",
     colorForeground: "#261e0f",
     colorMutedForeground: "#4a5a68",
@@ -29,6 +22,7 @@ export const clerkAppearance = {
   },
   elements: {
     cardBox: {
+      // Shadows are reserved for dropdowns, modals and tooltips.
       boxShadow: "none",
       border: "1px solid #c1bdb5",
       borderRadius: "10px",

@@ -1,5 +1,3 @@
-"""The Clerk webhook endpoint: signatures, and what a bad event does to Svix."""
-
 import base64
 import json
 from datetime import datetime, timezone

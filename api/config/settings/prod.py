@@ -1,5 +1,3 @@
-"""Production settings (Amazon RDS + S3)."""
-
 from .base import *  # noqa: F403
 from .base import env, env_bool
 
@@ -13,7 +11,7 @@ SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
-# RDS requires TLS; fail loudly rather than silently connecting in the clear.
+# RDS requires TLS.
 DATABASES["default"].setdefault("OPTIONS", {})  # noqa: F405
 DATABASES["default"]["OPTIONS"].setdefault(  # noqa: F405
     "sslmode", env("DATABASE_SSLMODE", "require")

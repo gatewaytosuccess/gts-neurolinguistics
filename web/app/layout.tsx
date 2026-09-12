@@ -5,11 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
 
-/*
- * next/font ships only the `wght` axis by default, so the axes DESIGN.md
- * leans on — SOFT for warmth, opsz so strokes hold at 96px without thickening
- * at 26px — have to be asked for by name.
- */
+// next/font loads only `wght` unless other axes are named.
 const fraunces = Fraunces({
   subsets: ["latin"],
   axes: ["SOFT", "WONK", "opsz"],

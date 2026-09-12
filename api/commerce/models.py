@@ -1,7 +1,4 @@
-"""Carts, orders and coupons.
-
-Money is stored in integer cents in a single currency.
-"""
+"""All money is integer cents in a single currency."""
 
 from django.conf import settings
 from django.db import models

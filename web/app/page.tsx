@@ -3,10 +3,6 @@ import Link from "next/link";
 import { Masthead } from "@/components/masthead";
 import { fetchCurrentUser, type CurrentUser } from "@/lib/api";
 
-/*
- * A stub: the real landing page (catalog, progress, featured courses) is its
- * own piece of work. The signed-in half is real, and reads from Django.
- */
 export default async function Home() {
   let user: CurrentUser | null = null;
   let apiReachable = true;

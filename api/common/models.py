@@ -1,9 +1,3 @@
-"""Base models shared by every app.
-
-SCHEMA.md gives every table a uuid primary key and ``created_at`` /
-``updated_at`` timestamps; these mixins keep that in one place.
-"""
-
 import uuid
 
 from django.db import models

@@ -5,7 +5,7 @@ from users.models import Role, User, UserStatus
 
 @pytest.fixture
 def clerk_payload():
-    """A ``user.created`` / ``user.updated`` ``data`` object as Clerk sends it."""
+    """Builds the ``data`` object of a Clerk ``user.created`` / ``user.updated`` event."""
 
     def build(
         clerk_user_id="user_2abcDEF",

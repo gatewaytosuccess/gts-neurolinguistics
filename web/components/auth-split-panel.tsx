@@ -1,11 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
-/*
- * The frame both account pages sit in. Nothing is centered: DESIGN.md is
- * explicit that a centered hero is the fastest way for this to read as a
- * generic SaaS template rather than a course catalog.
- */
+// Not centered: a centered hero reads as generic SaaS.
 export function AuthSplitPanel({
   eyebrow,
   headline,

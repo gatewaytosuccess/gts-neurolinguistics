@@ -1,18 +1,9 @@
 """
-DRF authentication against Clerk session JWTs.
+Provisions an unknown Clerk user on first request: Clerk redirects a new user
+into the app before the ``user.created`` webhook can land.
 
-The Next.js frontend sends the Clerk session token as ``Authorization: Bearer
-<jwt>``. We verify it against Clerk's JWKS (RS256, cached), then resolve the
-local mirror of that Clerk user.
-
-``users.webhooks`` is the durable way local rows get written; the just-in-time
-provisioning here covers one gap it cannot, since Clerk redirects a brand-new
-user into the app the instant they finish signing up, which can be before the
-``user.created`` delivery lands.
-
-That fallback needs ``email`` in the token claims -- add it under Clerk's
-"Customize session token", not a named JWT template, since ``getToken()``
-without a template argument returns the default session token.
+Provisioning needs an ``email`` claim. Add it under Clerk's "Customize session
+token"; a named JWT template is not what ``getToken()`` returns.
 """
 
 import logging
@@ -30,7 +21,6 @@ _jwks_client = None
 
 
 def get_jwks_client():
-    """Cached PyJWKClient -- Clerk's signing keys rotate, so keys are refetched."""
     global _jwks_client
     if _jwks_client is None:
         if not settings.CLERK_JWKS_URL:

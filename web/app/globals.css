@@ -1,16 +1,13 @@
 @import "tailwindcss";
 
 /*
- * DESIGN.md as tokens. Names mirror that file one-for-one so it stays the
- * source of truth.
+ * Token names match DESIGN.md one-for-one.
  *
- * Dark mode is deliberately absent: DESIGN.md scopes it to the lesson
- * dashboard, which does not exist yet, so there is no `prefers-color-scheme`
- * block here for a later design to fight.
+ * No dark mode outside the lesson dashboard.
  */
 
 @theme {
-  /* Brand core, inherited from the GTS credit-services site */
+  /* Brand core: shared with the GTS credit-services site */
   --color-primary: #0a2463;
   --color-primary-strong: #070d41;
   --color-primary-subtle: #accbe1;
@@ -36,7 +33,7 @@
   --color-tertiary-strong: #925100;
   --color-tertiary-pale: #f5e6ce;
 
-  /* Two families, split by job: Fraunces is voice, Source Sans 3 is apparatus */
+  /* Display is for headlines and quotes only */
   --font-display: var(--font-fraunces), "Source Serif 4", Georgia, serif;
   --font-sans: var(--font-source-sans), -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
 
@@ -56,8 +53,7 @@
   --spacing-margin: 64px;
 }
 
-/* `SOFT` carries the warmth and `opsz` tracks each level's rendered size.
- * `WONK` stays at 0 throughout: this wants character, not whimsy. */
+/* Keep `opsz` equal to each level's font-size in px. */
 
 @utility type-display {
   font-family: var(--font-display);
@@ -164,7 +160,6 @@
   font-feature-settings: "tnum" 1;
 }
 
-/* Body copy is read at length, not skimmed: DESIGN.md caps it at ~68 chars. */
 @utility measure {
   max-width: 68ch;
 }
@@ -178,7 +173,7 @@
     line-height: 1.65;
   }
 
-  /* 1px primary on focus at a 2px offset clears 3:1 on every light surface. */
+  /* Meets 3:1 non-text contrast on every light surface. */
   :focus-visible {
     outline: 1px solid var(--color-primary);
     outline-offset: 2px;

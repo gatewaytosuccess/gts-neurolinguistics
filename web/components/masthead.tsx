@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { Show, UserButton } from "@clerk/nextjs";
 
-/*
- * Navy is structural here and never an interaction color: the one filled
- * button on the bar is Brass Seal, per DESIGN.md.
- */
+// Navy is structural only; interactive fills use Brass Seal.
 export function Masthead() {
   return (
     <header className="bg-primary">

@@ -6,11 +6,5 @@ from .serializers import UserSerializer
 
 @api_view(["GET"])
 def me(request):
-    """The signed-in user's local mirror row.
-
-    ``ClerkAuthentication`` has already verified the session token and, if the
-    ``user.created`` webhook has not landed yet, provisioned the row -- so this
-    is also what the frontend calls right after sign-up to be sure the account
-    exists before it renders anything that depends on it.
-    """
+    """Safe to call right after sign-up: authentication provisions a missing row."""
     return Response(UserSerializer(request.user).data)

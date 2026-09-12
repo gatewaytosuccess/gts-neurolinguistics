@@ -23,19 +23,19 @@
 
 ### USERS
 
-| Column            | Type      | Key / Constraints           | Notes                                                                       |
-| ----------------- | --------- | --------------------------- | --------------------------------------------------------------------------- |
-| id                | uuid      | PK                          |                                                                             |
-| clerk_user_id     | string    | UK, not null                |                                                                             |
-| email             | string    | UK, not null                |                                                                             |
-| name              | string    | not null                    |                                                                             |
-| avatar_url        | string    | nullable                    |                                                                             |
-| role              | enum      | not null, default `learner` | `learner \| instructor \| admin`                                            |
+| Column            | Type      | Key / Constraints           | Notes                                                                                             |
+| ----------------- | --------- | --------------------------- | ------------------------------------------------------------------------------------------------- |
+| id                | uuid      | PK                          |                                                                                                   |
+| clerk_user_id     | string    | UK, not null                |                                                                                                   |
+| email             | string    | UK, not null                |                                                                                                   |
+| name              | string    | not null                    |                                                                                                   |
+| avatar_url        | string    | nullable                    |                                                                                                   |
+| role              | enum      | not null, default `learner` | `learner \| instructor \| admin`                                                                  |
 | status            | enum      | not null, default `active`  | `active \| suspended \| banned \| deleted` — anything other than `active` blocks login. See below |
-| suspended_at      | timestamp | nullable                    | Set when a user is suspended or banned                                      |
-| suspension_reason | string    | nullable                    | Admin audit note                                                            |
-| created_at        | timestamp | not null                    |                                                                             |
-| updated_at        | timestamp | not null                    |                                                                             |
+| suspended_at      | timestamp | nullable                    | Set when a user is suspended or banned                                                            |
+| suspension_reason | string    | nullable                    | Admin audit note                                                                                  |
+| created_at        | timestamp | not null                    |                                                                                                   |
+| updated_at        | timestamp | not null                    |                                                                                                   |
 
 Account status splits along one axis: who can clear it.
 
