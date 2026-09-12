@@ -30,3 +30,17 @@ See `SCHEMA.md` at the root of the project.
 
 `SPEC.md` - a high level spec of the project. Free to change if a better alternative to anything in the spec exists.\
 `DESIGN.md` - a design for the frontend visuals.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues on `gatewaytosuccess/gts-neurolinguistics`, managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, using their default label strings. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
