@@ -2,23 +2,9 @@
 Mirroring Clerk users into the local ``users`` table.
 
 Clerk owns identity; this table is a read-only mirror of it (see
-``docs/adr/0001-clerk-owns-identity.md``). Two paths write to that mirror and
-they must never disagree about the rules, so both call in here:
-
-* the Clerk webhook (``users.webhooks``) -- the durable path;
-* just-in-time provisioning in ``users.authentication.ClerkAuthentication`` --
-  the fallback that closes the race between Clerk redirecting a brand-new user
-  into the app and the ``user.created`` webhook actually landing.
-
-The rules that are easy to get wrong, in one place:
-
-* A row whose ``clerk_user_id`` belongs to someone else is never stolen, no
-  matter which email arrives on it.
-* ``deleted`` is self-service and reversible: signing up again with the same
-  email resurrects the row, enrollments and order history included.
-* ``suspended`` and ``banned`` are admin-imposed and are never cleared by
-  anything a user can do to their own Clerk account -- not by deleting it, not
-  by signing up again.
+``docs/adr/0001-clerk-owns-identity.md``). The webhook and the just-in-time
+fallback in ``users.authentication`` both write to that mirror, and both go
+through here so they cannot drift apart on who may be linked to whom.
 """
 
 import logging
@@ -49,8 +35,8 @@ def primary_email(payload):
     for address in addresses:
         if address.get("id") == primary_id:
             return (address.get("email_address") or "").strip() or None
-    # No primary flagged (possible on partially-built users): fall back to the
-    # only address there is, and otherwise give up.
+    # A partially-built Clerk user can have no primary flagged yet; one
+    # unambiguous address is still safe to mirror.
     if len(addresses) == 1:
         return (addresses[0].get("email_address") or "").strip() or None
     return None
@@ -115,8 +101,8 @@ def _link_existing(user, clerk_user_id, *, email, name, avatar_url):
         logger.info("Resurrecting deleted account %s for Clerk user %s.", user.id, clerk_user_id)
         user.status = UserStatus.ACTIVE
     elif user.role != Role.LEARNER:
-        # Adopting rather than escalating: the row already carried this role and
-        # this email, and Clerk has verified the address. Still worth a shout.
+        # Adoption, not escalation: the row already held this role and this
+        # email, and Clerk has verified the address. Still worth a shout.
         logger.warning(
             "Linking Clerk user %s to pre-existing %s account %s (%s).",
             clerk_user_id,

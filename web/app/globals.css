@@ -1,16 +1,12 @@
 @import "tailwindcss";
 
 /*
- * The design system from DESIGN.md, and nothing else.
+ * DESIGN.md as tokens. Names mirror that file one-for-one so it stays the
+ * source of truth.
  *
- * Token names mirror that file one-for-one so it stays the source of truth:
- * a color named `tertiary` there is `--color-tertiary` here, and every
- * typography level is a `type-*` utility carrying the exact size, line height,
- * tracking and font-variation settings the design specifies.
- *
- * Dark mode is deliberately absent. DESIGN.md scopes it to the lesson
- * dashboard, which does not exist yet; the marketing and account pages are
- * light-mode only, so there is no `prefers-color-scheme` block to fight.
+ * Dark mode is deliberately absent: DESIGN.md scopes it to the lesson
+ * dashboard, which does not exist yet, so there is no `prefers-color-scheme`
+ * block here for a later design to fight.
  */
 
 @theme {
@@ -60,11 +56,8 @@
   --spacing-margin: 64px;
 }
 
-/*
- * Typography. `opsz` tracks the rendered size at every level so strokes stay
- * confident at 96px without over-thickening at 26px, and `SOFT` is what makes
- * the collegiate register read as warm rather than stern. `WONK` stays at 0.
- */
+/* `SOFT` carries the warmth and `opsz` tracks each level's rendered size.
+ * `WONK` stays at 0 throughout: this wants character, not whimsy. */
 
 @utility type-display {
   font-family: var(--font-display);

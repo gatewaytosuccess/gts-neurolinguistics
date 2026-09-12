@@ -1,13 +1,11 @@
 /*
- * DESIGN.md, expressed in Clerk's appearance vocabulary.
+ * DESIGN.md, expressed in Clerk's appearance vocabulary, so the prebuilt cards
+ * match the page chrome they sit in.
  *
- * Clerk's prebuilt <SignUp /> and <SignIn /> cards render inside our own page
- * chrome, so they have to speak the same visual language as everything around
- * them. Most of that lands through `variables`; `elements` covers the handful
- * of things the variable set cannot say -- notably that the card must not
- * carry a shadow (DESIGN.md gives shadows only to dropdowns, modals and
- * tooltips) and that the primary button is Brass Seal with dark ink on it,
- * never white, which fails contrast badly against a mid-lightness gold.
+ * Two values below look like mistakes and are not: the card carries no shadow,
+ * because DESIGN.md gives those only to dropdowns, modals and tooltips; and
+ * the primary button takes dark ink rather than white, which manages only
+ * 2.3:1 against a mid-lightness gold.
  */
 export const clerkAppearance = {
   variables: {

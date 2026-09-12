@@ -4,11 +4,8 @@ import { Masthead } from "@/components/masthead";
 import { fetchCurrentUser, type CurrentUser } from "@/lib/api";
 
 /*
- * The landing page is a stub — its real design (course catalog, progress
- * overview, featured courses) belongs to its own piece of work. What it does
- * carry is the whole point of this one: when you are signed in, everything
- * below the greeting came out of Postgres, through Django, authenticated by a
- * Clerk session token. If this renders your name, the integration works.
+ * A stub: the real landing page (catalog, progress, featured courses) is its
+ * own piece of work. The signed-in half is real, and reads from Django.
  */
 export default async function Home() {
   let user: CurrentUser | null = null;
@@ -17,8 +14,7 @@ export default async function Home() {
   try {
     user = await fetchCurrentUser();
   } catch {
-    // A signed-in session whose API call failed should still render a page
-    // that says so, rather than a 500.
+    // An unreachable API should degrade to a page that says so, not a 500.
     apiReachable = false;
   }
 

@@ -2,8 +2,8 @@
 Clerk webhook receiver.
 
 Clerk delivers ``user.*`` events here through Svix. This is the durable half of
-the mirror: it catches the things a session token never tells us about -- an
-email changed in Clerk, an account deleted, a name edited from another device.
+the mirror: a session token only ever describes the person presenting it, so
+deletions and edits made elsewhere arrive only as events.
 
 Retries are the reason almost everything below returns 200. Svix retries any
 non-2xx for days, so a response code is only useful for the failures a retry

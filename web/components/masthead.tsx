@@ -2,9 +2,8 @@ import Link from "next/link";
 import { Show, UserButton } from "@clerk/nextjs";
 
 /*
- * Solid navy field, `primary-subtle` links, and the wordmark at full contrast.
- * Brass Seal appears here only on the active nav item, which DESIGN.md allows
- * because "where you are right now" is a form of progress indication.
+ * Navy is structural here and never an interaction color: the one filled
+ * button on the bar is Brass Seal, per DESIGN.md.
  */
 export function Masthead() {
   return (

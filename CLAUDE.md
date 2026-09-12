@@ -31,6 +31,16 @@ See `SCHEMA.md` at the root of the project.
 `SPEC.md` - a high level spec of the project. Free to change if a better alternative to anything in the spec exists.\
 `DESIGN.md` - a design for the frontend visuals.
 
+## Code comments
+
+A comment earns its place by saying something the code cannot.
+
+- **Explain why, not what.** A comment that restates the line below it is noise. Comment the things a reader would otherwise undo: a decision with a non-obvious reason, a constraint that isn't visible locally, a value that looks like a mistake and isn't.
+- **Describe what only when the code can't say it.** An opaque regex, a branch whose trigger isn't obvious, a workaround for someone else's bug. Self-evident code gets nothing.
+- **Never write about changes.** No "was X, now Y", no "renamed from", no "added to fix the bug where", no notes about what a library version altered. A comment describes the code as it stands. History belongs in git; framework-version gotchas belong in the relevant README.
+- **Never describe code that isn't there.** Comments are part of what you change: if behaviour moves, the comments around it move with it, and a stale comment is worse than none.
+- **Docstrings answer to the same test.** Give a caller what the signature doesn't already: what comes back on failure, what is deliberately excluded, what the thing must not be used for. Don't narrate the body.
+
 ## Agent skills
 
 ### Issue tracker

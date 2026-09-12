@@ -5,16 +5,14 @@ The Next.js frontend sends the Clerk session token as ``Authorization: Bearer
 <jwt>``. We verify it against Clerk's JWKS (RS256, cached), then resolve the
 local mirror of that Clerk user.
 
-The Clerk webhook in ``users.webhooks`` is the durable way local rows get
-written. This module keeps a just-in-time fallback for one specific gap: Clerk
-redirects a brand-new user into the app the instant they finish signing up,
-which can be before the ``user.created`` delivery lands. Provisioning here
-means that user's first API call works anyway.
+``users.webhooks`` is the durable way local rows get written; the just-in-time
+provisioning here covers one gap it cannot, since Clerk redirects a brand-new
+user into the app the instant they finish signing up, which can be before the
+``user.created`` delivery lands.
 
-Both paths go through ``users.sync`` so they cannot disagree about who may be
-linked to whom. JIT provisioning needs ``email`` in the token claims -- add it
-under Clerk's "Customize session token", not a named JWT template, since
-``getToken()`` without a template argument returns the default session token.
+That fallback needs ``email`` in the token claims -- add it under Clerk's
+"Customize session token", not a named JWT template, since ``getToken()``
+without a template argument returns the default session token.
 """
 
 import logging

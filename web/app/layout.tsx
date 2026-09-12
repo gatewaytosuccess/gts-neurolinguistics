@@ -6,9 +6,9 @@ import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
 
 /*
- * Fraunces carries the voice, Source Sans 3 the apparatus. The extra Fraunces
- * axes are requested explicitly -- next/font ships only `wght` by default, and
- * without SOFT and opsz the type loses the warmth DESIGN.md is built around.
+ * next/font ships only the `wght` axis by default, so the axes DESIGN.md
+ * leans on — SOFT for warmth, opsz so strokes hold at 96px without thickening
+ * at 26px — have to be asked for by name.
  */
 const fraunces = Fraunces({
   subsets: ["latin"],

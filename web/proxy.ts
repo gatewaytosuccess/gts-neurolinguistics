@@ -1,14 +1,12 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 /*
- * Next 16 renamed `middleware.ts` to `proxy.ts`; the contract is unchanged.
+ * Runs Clerk's request handling so `auth()` works in server components.
  *
- * This runs Clerk's request handling so `auth()` works in server components,
- * and does no route protection of its own. Clerk deprecated
- * `createRouteMatcher` in Core 3 for a good reason: matching paths here can
- * diverge from how Next actually routes a request, which leaves protected
- * data reachable. Pages and route handlers check their own access instead --
- * see `app/page.tsx`.
+ * Route protection deliberately does not happen here. Matching paths in a
+ * proxy can diverge from how Next actually routes a request, which leaves
+ * protected data reachable; each page and route handler checks its own access
+ * instead — see `app/page.tsx`.
  */
 export default clerkMiddleware();
 
