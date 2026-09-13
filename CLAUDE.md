@@ -8,11 +8,15 @@ This is a fullstack web application. It's purpose is to serve as a learning plat
 
 ## Tech Stack
 
-**Backend**: Python + Django\
 **Frontend**: Typescript + Next.js\
+**Backend**: Python + Django\
 **Database**: PostgreSQL on Amazon RDS\
 **Object storage**: Amazon S3\
 **Auth**: Clerk
+
+## Frontend (`web/`)
+
+Next.js project. See `web/README.md` for more details.
 
 ## Backend (`api/`)
 
@@ -22,10 +26,12 @@ Django project with a virtualenv at `api/.venv` (gitignored). Run commands as `.
 
 See `SCHEMA.md` at the root of the project.
 
-## Other Files
+## Other .md Files
 
-`SPEC.md` - a high level spec of the project. Free to change if a better alternative to anything in the spec exists.\
+`CONTEXT.md` - Project language and terminology. Used and updated after/during grilling sessions (grill-with-docs skill) when vocabulary is solidified.\
 `DESIGN.md` - a design for the frontend visuals.
+`README.md` - standard readme, mostly tailored towards dev setup instructions at the moment.
+`SPEC.md` - a high level spec of the project. Free to change if a better alternative to anything in the spec exists.\
 
 ## Code comments
 

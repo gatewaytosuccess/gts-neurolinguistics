@@ -2,9 +2,10 @@
 
 - Python 3.13
 - PostgreSQL 18+
+- Node.js 20.9+ (npm)
 - A Clerk application (for anything beyond the health check)
 
-## Dev setup
+## Backend dev setup
 
 All backend commands run from `api/`.
 
@@ -59,18 +60,48 @@ Point `DATABASE_URL` at it, then:
 Settings default to `config.settings.dev`; production sets
 `DJANGO_SETTINGS_MODULE=config.settings.prod`.
 
-## Frontend
+## Frontend dev setup
 
-`web/` is empty — the Next.js app hasn't been scaffolded yet. When it is, it
-runs on http://localhost:3000, which is what the CORS, CSRF, and Clerk
-authorized-party settings in `api/.env.example` already expect.
+All frontend commands run from `web/`. The backend must be running first.
+
+### 1. Dependencies
+
+```bash
+cd web
+npm install
+```
+
+### 2. Environment
+
+```bash
+cp .env.local.example .env.local
+```
+
+Fill in `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` from the
+Clerk dashboard (API keys). Use the same Clerk application as `api/.env`, or
+Django will reject the session tokens the frontend sends.
+
+`API_BASE_URL` defaults to `http://127.0.0.1:8000`. It is server-only: the
+browser never calls Django directly.
+
+### 3. Run
+
+```bash
+npm run dev                             # http://localhost:3000
+```
+
+Keep it on port 3000 — the CORS, CSRF, and Clerk authorized-party settings in
+`api/.env` expect that origin.
+
+Other scripts: `npm run build`, `npm run start`, `npm run lint`. See
+`web/README.md` for layout and conventions.
 
 ## Repo layout
 
 ```
 api/            Django project (config, common, users, courses,
                 enrollments, commerce, reviews)
-web/            Next.js app (TBD)
+web/            Next.js app (App Router, Tailwind v4, Clerk)
 SPEC.md         feature spec, grouped by page
 SCHEMA.md       database schema
 DESIGN.md       frontend design
