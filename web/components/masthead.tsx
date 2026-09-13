@@ -5,7 +5,7 @@ import { Show, UserButton } from "@clerk/nextjs";
 export function Masthead() {
   return (
     <header className="bg-primary">
-      <nav className="mx-auto flex max-w-[1200px] items-center justify-between px-md py-md sm:px-margin">
+      <nav className="mx-auto flex max-w-[1200px] items-center justify-between gap-md px-md py-md sm:px-margin">
         <Link href="/" className="type-headline-sm text-paper-raised">
           GTS Neurolinguistics
         </Link>
@@ -17,19 +17,22 @@ export function Masthead() {
               <>
                 <Link
                   href="/sign-in"
-                  className="type-label-md text-primary-subtle hover:text-paper-raised"
+                  className="type-label-md whitespace-nowrap text-primary-subtle hover:text-paper-raised"
                 >
                   Sign in
                 </Link>
-                <Link
-                  href="/sign-up"
-                  className="type-label-lg rounded-md bg-tertiary px-md py-sm text-accent-strong hover:bg-tertiary-strong hover:text-paper-raised"
-                >
+                <Link href="/sign-up" className="button-primary">
                   Enroll
                 </Link>
               </>
             }
           >
+            <Link
+              href="/dashboard"
+              className="type-label-md whitespace-nowrap text-primary-subtle hover:text-paper-raised"
+            >
+              Dashboard
+            </Link>
             <UserButton />
           </Show>
         </div>

@@ -22,10 +22,14 @@ web/
   app/
     layout.tsx       fonts + <ClerkProvider>
     globals.css      the DESIGN.md token layer
-    page.tsx         landing page; signed-in state reads /api/users/me
+    (marketing)/     public pages sharing the masthead and footer
+      page.tsx       landing page at /; never calls Django
+      _components/landing/  one component per landing section
+      _content/landing.ts   landing copy as typed data
+    dashboard/       signed-in home; reads /api/users/me
     sign-up/[[...sign-up]]/
     sign-in/[[...sign-in]]/
-  components/        masthead, auth split panel
+  components/        masthead, site footer, auth split panel
   lib/
     api.ts           server-side fetch against Django, Clerk token attached
     clerk-appearance.ts  DESIGN.md in Clerk's appearance vocabulary

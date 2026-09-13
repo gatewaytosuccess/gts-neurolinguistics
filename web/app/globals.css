@@ -1,13 +1,11 @@
 @import "tailwindcss";
 
 /*
- * Token names match DESIGN.md one-for-one.
- *
  * No dark mode outside the lesson dashboard.
  */
 
 @theme {
-  /* Brand core: shared with the GTS credit-services site */
+  /* Brand core */
   --color-primary: #0a2463;
   --color-primary-strong: #070d41;
   --color-primary-subtle: #accbe1;
@@ -162,6 +160,52 @@
 
 @utility measure {
   max-width: 68ch;
+}
+
+/* At most one per screen: Brass Seal stops meaning "click this" once it repeats. */
+@utility button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background-color: var(--color-tertiary);
+  color: var(--color-accent-strong);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+
+  &:hover {
+    background-color: var(--color-tertiary-strong);
+    color: var(--color-paper-raised);
+  }
+}
+
+@utility button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background-color: var(--color-paper);
+  color: var(--color-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-primary-pale);
+    color: var(--color-primary-strong);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    border-color: var(--color-border-strong);
+    color: var(--color-meta-text);
+  }
 }
 
 @layer base {
