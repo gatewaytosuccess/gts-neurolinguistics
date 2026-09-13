@@ -17,7 +17,7 @@ export default function SignUpPage() {
         <SignUp
           path="/sign-up"
           signInUrl="/sign-in"
-          fallbackRedirectUrl="/"
+          fallbackRedirectUrl="/dashboard"
         />
       </AuthSplitPanel>
     </>

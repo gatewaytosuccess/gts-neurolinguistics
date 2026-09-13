@@ -1,17 +1,23 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { auth } from "@clerk/nextjs/server";
 
 import { Masthead } from "@/components/masthead";
 import { fetchCurrentUser, type CurrentUser } from "@/lib/api";
 
-export default async function Home() {
+export const metadata: Metadata = {
+  title: "Dashboard",
+};
+
+export default async function DashboardPage() {
+  const { userId, redirectToSignIn } = await auth();
+  if (!userId) return redirectToSignIn();
+
   let user: CurrentUser | null = null;
-  let apiReachable = true;
 
   try {
     user = await fetchCurrentUser();
   } catch {
     // An unreachable API should degrade to a page that says so, not a 500.
-    apiReachable = false;
   }
 
   return (
@@ -21,46 +27,12 @@ export default async function Home() {
         {user ? (
           <AccountSummary user={user} />
         ) : (
-          <SignedOutHero apiReachable={apiReachable} />
+          <p className="type-body-sm rounded-sm bg-warning-subtle px-sm py-sm text-warning">
+            The course API is not responding, so account details are unavailable.
+          </p>
         )}
       </main>
     </>
-  );
-}
-
-function SignedOutHero({ apiReachable }: { apiReachable: boolean }) {
-  return (
-    <div>
-      <p className="type-label-caps text-accent">Neurolinguistics</p>
-      <h1 className="type-headline-lg measure mt-md">
-        The cognitive science of how language lives in the brain.
-      </h1>
-      <p className="type-body-lg measure mt-lg text-accent-strong">
-        A self-paced course for curious learners. Create an account to enroll and
-        track your progress across devices.
-      </p>
-      <div className="mt-xl flex flex-wrap gap-md">
-        <Link
-          href="/sign-up"
-          className="type-label-lg rounded-md bg-tertiary px-md py-sm text-accent-strong hover:bg-tertiary-strong hover:text-paper-raised"
-        >
-          Create your account
-        </Link>
-        <Link
-          href="/sign-in"
-          className="type-label-lg rounded-md border border-primary bg-paper px-md py-sm text-primary hover:bg-primary-pale hover:text-primary-strong"
-        >
-          Sign in
-        </Link>
-      </div>
-
-      {!apiReachable && (
-        <p className="type-body-sm mt-xl rounded-sm bg-warning-subtle px-sm py-sm text-warning">
-          The course API is not responding, so account details are unavailable.
-          Signing up still works.
-        </p>
-      )}
-    </div>
   );
 }
 

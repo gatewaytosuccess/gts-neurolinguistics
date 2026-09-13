@@ -14,7 +14,7 @@ export default function SignInPage() {
     <>
       <Masthead />
       <AuthSplitPanel eyebrow="Welcome back" headline="Sign in to continue">
-        <SignIn path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/" />
+        <SignIn path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/dashboard" />
       </AuthSplitPanel>
     </>
   );
