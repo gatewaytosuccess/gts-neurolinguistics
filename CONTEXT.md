@@ -49,9 +49,23 @@ _Avoid_: Restore, undelete, reactivate
 A purchasable unit of teaching, made of modules, which are made of lessons.
 
 **Enrollment**:
-A user's access to a course, however they got it — bought, granted by an admin, or comped.
+A user's access to a course, however they got it — bought, granted by an admin, comped, or through a subscription.
 _Avoid_: Purchase, subscription, membership
+
+**Subscription**:
+Recurring paid access to every published course. It works by enrolling the subscriber in each course, including courses published later; cancelling revokes only the enrollments the subscription created, so courses bought outright are kept. Resubscribing reactivates those enrollments rather than creating new ones.
+_Avoid_: Membership, plan, all-access (all-access is marketing copy, not a domain term)
+
+**Bundle**:
+A curated set of courses sold together at a discount, as a one-time purchase.
+_Avoid_: Package, collection
 
 **Order**:
 A user's transaction for one or more courses. Distinct from the enrollments it produces: refunding an order and revoking access are separate acts.
 _Avoid_: Payment, receipt, invoice
+
+### Marketing
+
+**Testimonial**:
+A hand-picked quote with an attribution, chosen to persuade prospective learners. Not tied to enrollment: the person quoted may never have taken a course.
+_Avoid_: Review (a review is a learner's rating of a course they are enrolled in)
