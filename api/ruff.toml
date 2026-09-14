@@ -1,0 +1,23 @@
+# --- General settings ---
+line-length = 100
+target-version = "py313"
+exclude = [
+	".pytest_cache",
+    ".venv",
+    "migrations",
+]
+
+# --- Linting ---
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+"tests/*" = ["S101"]   # allow assert statements in tests
+"__init__.py" = ["F401"]  # allow unused imports in __init__
+
+# --- Formatting ---
+[format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
