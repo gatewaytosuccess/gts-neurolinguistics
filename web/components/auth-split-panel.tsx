@@ -21,15 +21,15 @@ export function AuthSplitPanel({
               {headline}
             </h1>
             <p className="type-body-lg measure mt-lg text-primary-pale">
-              How language lives in the brain — taught for curious, self-directed
-              learners, not clinicians or linguists-in-training.
+              How language lives in the brain — taught for curious,
+              self-directed learners, not clinicians or linguists-in-training.
             </p>
           </div>
 
           <figure className="hidden lg:block">
             <blockquote className="type-quote measure text-primary-pale">
-              “It demystifies something you have been doing effortlessly your whole
-              life, and makes it astonishing again.”
+              “It demystifies something you have been doing effortlessly your
+              whole life, and makes it astonishing again.”
             </blockquote>
             <figcaption className="type-caption mt-sm text-primary-muted">
               A note from the instructor

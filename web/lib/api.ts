@@ -38,7 +38,10 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new ApiError(response.status, `${init.method ?? "GET"} ${path} failed`);
+    throw new ApiError(
+      response.status,
+      `${init.method ?? "GET"} ${path} failed`,
+    );
   }
 
   return (await response.json()) as T;

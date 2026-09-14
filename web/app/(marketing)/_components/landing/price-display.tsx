@@ -5,7 +5,9 @@ export function PriceDisplay({ price }: { price: Price }) {
   return (
     <div>
       <p className="flex items-baseline gap-xs">
-        <span className="type-headline-sm">{formatPrice(price.amountCents)}</span>
+        <span className="type-headline-sm">
+          {formatPrice(price.amountCents)}
+        </span>
         {price.period && (
           <span className="type-body-sm text-meta-text">/ {price.period}</span>
         )}

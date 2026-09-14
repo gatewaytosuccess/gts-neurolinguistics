@@ -71,9 +71,7 @@ class Order(BaseModel):
         default=0, help_text="Snapshot of the discount actually applied."
     )
     total_cents = models.PositiveIntegerField()
-    payment_ref = models.CharField(
-        max_length=255, blank=True, help_text="Provider transaction id."
-    )
+    payment_ref = models.CharField(max_length=255, blank=True, help_text="Provider transaction id.")
 
     class Meta:
         db_table = "orders"

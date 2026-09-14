@@ -28,7 +28,8 @@ export default async function DashboardPage() {
           <AccountSummary user={user} />
         ) : (
           <p className="type-body-sm rounded-sm bg-warning-subtle px-sm py-sm text-warning">
-            The course API is not responding, so account details are unavailable.
+            The course API is not responding, so account details are
+            unavailable.
           </p>
         )}
       </main>
@@ -40,11 +41,14 @@ function AccountSummary({ user }: { user: CurrentUser }) {
   const rows: Array<[string, string]> = [
     ["Email", user.email],
     ["Role", user.role],
-    ["Member since", new Date(user.created_at).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })],
+    [
+      "Member since",
+      new Date(user.created_at).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    ],
     ["Account id", user.id],
   ];
 

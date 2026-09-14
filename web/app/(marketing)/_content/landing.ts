@@ -17,8 +17,7 @@ export const landing: LandingContent = {
     {
       slug: "foundations-of-neurolinguistics",
       title: "Foundations of Neurolinguistics",
-      description:
-        "Where language sits in the brain, and how we found out.",
+      description: "Where language sits in the brain, and how we found out.",
       priceCents: 14900,
       rating: 4.9,
       ratingCount: 312,
@@ -71,8 +70,7 @@ export const landing: LandingContent = {
       placeholder: true,
     },
     {
-      quote:
-        "Dense where it needs to be, and never showing off.",
+      quote: "Dense where it needs to be, and never showing off.",
       name: "Priya R.",
       context: "Speech-language graduate student",
       placeholder: true,

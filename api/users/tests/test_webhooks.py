@@ -122,7 +122,9 @@ class TestUserUpdated:
 class TestUserDeleted:
     def test_keeps_the_row_and_releases_the_clerk_id(self, post_event, clerk_payload):
         post_event("user.created", clerk_payload())
-        assert post_event("user.deleted", {"id": "user_2abcDEF", "deleted": True}).status_code == 200
+        assert (
+            post_event("user.deleted", {"id": "user_2abcDEF", "deleted": True}).status_code == 200
+        )
 
         user = User.objects.get(email="ada@example.com")
         assert user.status == UserStatus.DELETED

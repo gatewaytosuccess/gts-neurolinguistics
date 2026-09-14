@@ -60,9 +60,7 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255, blank=True)
     avatar_url = models.URLField(max_length=500, blank=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.LEARNER)
-    status = models.CharField(
-        max_length=20, choices=UserStatus.choices, default=UserStatus.ACTIVE
-    )
+    status = models.CharField(max_length=20, choices=UserStatus.choices, default=UserStatus.ACTIVE)
     suspended_at = models.DateTimeField(null=True, blank=True)
     suspension_reason = models.CharField(max_length=500, blank=True)
 

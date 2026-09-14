@@ -17,8 +17,7 @@ def clerk_payload():
     ):
         addresses = [{"id": "idn_primary", "email_address": email}]
         addresses += [
-            {"id": f"idn_extra_{i}", "email_address": extra}
-            for i, extra in enumerate(extra_emails)
+            {"id": f"idn_extra_{i}", "email_address": extra} for i, extra in enumerate(extra_emails)
         ]
         return {
             "id": clerk_user_id,

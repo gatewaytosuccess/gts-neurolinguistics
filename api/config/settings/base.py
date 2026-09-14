@@ -1,11 +1,10 @@
 """See ``.env.example`` for every variable read here."""
 
+import os
 from pathlib import Path
 
 import dj_database_url
 from dotenv import load_dotenv
-
-import os
 
 # api/
 BASE_DIR = Path(__file__).resolve().parents[2]

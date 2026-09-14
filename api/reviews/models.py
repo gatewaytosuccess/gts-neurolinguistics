@@ -16,9 +16,7 @@ class Review(BaseModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reviews"
     )
-    course = models.ForeignKey(
-        "courses.Course", on_delete=models.CASCADE, related_name="reviews"
-    )
+    course = models.ForeignKey("courses.Course", on_delete=models.CASCADE, related_name="reviews")
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )

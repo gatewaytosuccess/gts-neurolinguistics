@@ -69,7 +69,9 @@ class Lesson(BaseModel):
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="lessons")
     title = models.CharField(max_length=255)
     content_type = models.CharField(max_length=20, choices=ContentType.choices)
-    content_url = models.URLField(max_length=500, blank=True, help_text="S3 asset: video or slides.")
+    content_url = models.URLField(
+        max_length=500, blank=True, help_text="S3 asset: video or slides."
+    )
     content_body = models.TextField(blank=True, help_text="Rich text lessons.")
     position = models.PositiveIntegerField()
     is_preview = models.BooleanField(default=False, help_text="Free sample lesson.")

@@ -68,7 +68,9 @@ def mirror_user(*, clerk_user_id, email, name="", avatar_url=""):
             logger.info("Mirrored new Clerk user %s as %s.", clerk_user_id, user.id)
             return user
 
-        return _link_existing(existing, clerk_user_id, email=email, name=name, avatar_url=avatar_url)
+        return _link_existing(
+            existing, clerk_user_id, email=email, name=name, avatar_url=avatar_url
+        )
 
 
 def _link_existing(user, clerk_user_id, *, email, name, avatar_url):

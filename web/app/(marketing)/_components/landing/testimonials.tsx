@@ -31,7 +31,9 @@ export function Testimonials({
             key={testimonial.name}
             className="flex flex-col justify-between gap-lg rounded-lg bg-paper-raised p-lg"
           >
-            <blockquote className="type-quote">“{testimonial.quote}”</blockquote>
+            <blockquote className="type-quote">
+              “{testimonial.quote}”
+            </blockquote>
             <Byline testimonial={testimonial} tone="paper" />
           </figure>
         ))}

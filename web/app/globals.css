@@ -33,7 +33,9 @@
 
   /* Display is for headlines and quotes only */
   --font-display: var(--font-fraunces), "Source Serif 4", Georgia, serif;
-  --font-sans: var(--font-source-sans), -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-sans:
+    var(--font-source-sans), -apple-system, "Segoe UI", Helvetica, Arial,
+    sans-serif;
 
   --radius-xs: 2px;
   --radius-sm: 4px;
@@ -59,7 +61,11 @@
   font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.03em;
-  font-variation-settings: "wght" 600, "SOFT" 40, "WONK" 0, "opsz" 96;
+  font-variation-settings:
+    "wght" 600,
+    "SOFT" 40,
+    "WONK" 0,
+    "opsz" 96;
 }
 
 @utility type-headline-lg {
@@ -68,7 +74,11 @@
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.025em;
-  font-variation-settings: "wght" 600, "SOFT" 40, "WONK" 0, "opsz" 60;
+  font-variation-settings:
+    "wght" 600,
+    "SOFT" 40,
+    "WONK" 0,
+    "opsz" 60;
 }
 
 @utility type-headline-md {
@@ -77,7 +87,11 @@
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
-  font-variation-settings: "wght" 600, "SOFT" 35, "WONK" 0, "opsz" 42;
+  font-variation-settings:
+    "wght" 600,
+    "SOFT" 35,
+    "WONK" 0,
+    "opsz" 42;
 }
 
 @utility type-headline-sm {
@@ -86,7 +100,11 @@
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.015em;
-  font-variation-settings: "wght" 600, "SOFT" 30, "WONK" 0, "opsz" 30;
+  font-variation-settings:
+    "wght" 600,
+    "SOFT" 30,
+    "WONK" 0,
+    "opsz" 30;
 }
 
 @utility type-quote {
@@ -95,7 +113,10 @@
   font-size: 26px;
   font-weight: 500;
   line-height: 1.35;
-  font-variation-settings: "wght" 500, "SOFT" 55, "opsz" 26;
+  font-variation-settings:
+    "wght" 500,
+    "SOFT" 55,
+    "opsz" 26;
 }
 
 @utility type-body-lg {

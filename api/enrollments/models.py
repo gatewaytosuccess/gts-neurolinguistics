@@ -58,15 +58,11 @@ class LessonProgress(BaseModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lesson_progress"
     )
-    lesson = models.ForeignKey(
-        "courses.Lesson", on_delete=models.CASCADE, related_name="progress"
-    )
+    lesson = models.ForeignKey("courses.Lesson", on_delete=models.CASCADE, related_name="progress")
     status = models.CharField(
         max_length=20, choices=ProgressStatus.choices, default=ProgressStatus.NOT_STARTED
     )
-    last_position_seconds = models.PositiveIntegerField(
-        default=0, help_text="Video resume point."
-    )
+    last_position_seconds = models.PositiveIntegerField(default=0, help_text="Video resume point.")
     completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

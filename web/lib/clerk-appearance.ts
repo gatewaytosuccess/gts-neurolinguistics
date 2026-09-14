@@ -14,7 +14,8 @@ export const clerkAppearance = {
     colorDanger: "#a12f2f",
     colorSuccess: "#225a31",
     colorWarning: "#6e4200",
-    fontFamily: 'var(--font-source-sans), -apple-system, "Segoe UI", Helvetica, Arial, sans-serif',
+    fontFamily:
+      'var(--font-source-sans), -apple-system, "Segoe UI", Helvetica, Arial, sans-serif',
     borderRadius: "6px",
   },
   options: {

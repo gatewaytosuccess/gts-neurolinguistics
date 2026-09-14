@@ -33,6 +33,13 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(Coupon)
 class CouponAdmin(admin.ModelAdmin):
-    list_display = ("code", "discount_type", "discount_value", "status", "times_redeemed", "expires_at")
+    list_display = (
+        "code",
+        "discount_type",
+        "discount_value",
+        "status",
+        "times_redeemed",
+        "expires_at",
+    )
     list_filter = ("discount_type", "status")
     search_fields = ("code", "description")

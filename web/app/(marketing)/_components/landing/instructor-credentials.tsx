@@ -25,7 +25,9 @@ export function InstructorCredentials({
           >
             {instructor.name}
           </h2>
-          <p className="type-caption mt-xs text-meta-text">{instructor.title}</p>
+          <p className="type-caption mt-xs text-meta-text">
+            {instructor.title}
+          </p>
           <div className="mt-sm">
             <PlaceholderBadge show={instructor.placeholder} />
           </div>
