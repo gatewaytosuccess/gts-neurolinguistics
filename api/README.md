@@ -63,6 +63,16 @@ Then point `DATABASE_URL` in `.env` at it and apply migrations:
 .venv/bin/python manage.py createsuperuser
 ```
 
+To fill the catalog with sample data (dev only, safe to re-run):
+
+```bash
+.venv/bin/python manage.py seed_courses
+```
+
+It seeds three published courses and one draft, learners at
+`seed-learner-N@example.com`, and reviews (one of them hidden). It creates no
+enrollments: grant those in Django admin.
+
 ## Running
 
 ```bash
