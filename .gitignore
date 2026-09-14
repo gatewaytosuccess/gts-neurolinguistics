@@ -23,6 +23,9 @@ out/
 .turbo/
 *.tsbuildinfo
 
+# Local planning docs
+/MAPPING.md
+
 # Editors / OS
 .DS_Store
 .idea/
