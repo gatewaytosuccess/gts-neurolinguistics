@@ -22,6 +22,38 @@ export type CurrentUser = {
   created_at: string;
 };
 
+export type Paginated<T> = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+};
+
+export type CourseSummary = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  price_cents: number;
+  thumbnail_url: string;
+  rating_average: number | null;
+  rating_count: number;
+};
+
+// Shared cache: must never carry a token or return per-user data.
+async function publicFetch<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, `GET ${path} failed`);
+  }
+
+  return (await response.json()) as T;
+}
+
 async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { getToken } = await auth();
   const token = await getToken();
@@ -56,4 +88,9 @@ export async function fetchCurrentUser(): Promise<CurrentUser | null> {
   if (!userId) return null;
 
   return apiFetch<CurrentUser>("/api/users/me/");
+}
+
+/** Published courses, newest first. Throws if the API is unreachable or returns non-2xx. */
+export async function fetchCourses(): Promise<Paginated<CourseSummary>> {
+  return publicFetch<Paginated<CourseSummary>>("/api/courses/");
 }

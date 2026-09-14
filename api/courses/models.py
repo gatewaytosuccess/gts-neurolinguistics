@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from common.models import BaseModel
+from reviews.models import ReviewStatus
 
 
 class CourseStatus(models.TextChoices):
@@ -13,6 +14,22 @@ class ContentType(models.TextChoices):
     VIDEO = "video", "Video"
     SLIDES = "slides", "Slides"
     TEXT = "text", "Text"
+
+
+class CourseQuerySet(models.QuerySet):
+    def published(self):
+        return self.filter(status=CourseStatus.PUBLISHED)
+
+    def with_ratings(self):
+        """Adds ``rating_average`` (``None`` with no reviews) and ``rating_count``.
+
+        Hidden reviews are not counted.
+        """
+        published_reviews = models.Q(reviews__status=ReviewStatus.PUBLISHED)
+        return self.annotate(
+            rating_average=models.Avg("reviews__rating", filter=published_reviews),
+            rating_count=models.Count("reviews", filter=published_reviews),
+        )
 
 
 class Course(BaseModel):
@@ -32,6 +49,8 @@ class Course(BaseModel):
     status = models.CharField(
         max_length=20, choices=CourseStatus.choices, default=CourseStatus.DRAFT
     )
+
+    objects = CourseQuerySet.as_manager()
 
     class Meta:
         db_table = "courses"
