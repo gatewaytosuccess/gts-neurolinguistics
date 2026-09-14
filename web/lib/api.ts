@@ -90,7 +90,26 @@ export async function fetchCurrentUser(): Promise<CurrentUser | null> {
   return apiFetch<CurrentUser>("/api/users/me/");
 }
 
-/** Published courses, newest first. Throws if the API is unreachable or returns non-2xx. */
-export async function fetchCourses(): Promise<Paginated<CourseSummary>> {
-  return publicFetch<Paginated<CourseSummary>>("/api/courses/");
+export const COURSE_SORTS = ["newest", "price_asc", "price_desc"] as const;
+
+export type CourseSort = (typeof COURSE_SORTS)[number];
+
+export function isCourseSort(value: unknown): value is CourseSort {
+  return COURSE_SORTS.includes(value as CourseSort);
+}
+
+/**
+ * Published courses. `q` matches title or description; a blank `q` is no
+ * filter. Throws if the API is unreachable or returns non-2xx.
+ */
+export async function fetchCourses({
+  q = "",
+  sort = "newest",
+}: { q?: string; sort?: CourseSort } = {}): Promise<Paginated<CourseSummary>> {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set("q", q.trim());
+  if (sort !== "newest") params.set("sort", sort);
+
+  const query = params.size ? `?${params}` : "";
+  return publicFetch<Paginated<CourseSummary>>(`/api/courses/${query}`);
 }

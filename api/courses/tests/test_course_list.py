@@ -23,14 +23,22 @@ def review(course, rating, status=ReviewStatus.PUBLISHED):
     return Review.objects.create(user=user, course=course, rating=rating, status=status)
 
 
-def list_courses(client, **headers):
-    response = client.get(reverse("course-list"), headers=headers)
+def list_courses(client, params=None, **headers):
+    response = client.get(reverse("course-list"), params or {}, headers=headers)
     assert response.status_code == 200
     return response.json()
 
 
 def by_slug(body):
     return {item["slug"]: item for item in body["results"]}
+
+
+def slugs(body):
+    return [item["slug"] for item in body["results"]]
+
+
+def age(course, days):
+    Course.objects.filter(pk=course.pk).update(created_at=timezone.now() - timedelta(days=days))
 
 
 class TestVisibility:
@@ -59,6 +67,98 @@ class TestVisibility:
         assert body["count"] == settings.REST_FRAMEWORK["PAGE_SIZE"] + 1
         assert len(body["results"]) == settings.REST_FRAMEWORK["PAGE_SIZE"]
         assert body["next"] is not None
+
+
+class TestSearch:
+    def test_matches_a_word_in_the_title_case_insensitively(self, client):
+        make_course("aphasia", title="Understanding Aphasia")
+        make_course("syntax", title="Syntax in the Brain")
+
+        assert slugs(list_courses(client, {"q": "APHASIA"})) == ["aphasia"]
+
+    def test_matches_a_word_in_the_description_case_insensitively(self, client):
+        make_course("foundations", description="Where BROCA'S area sits.")
+        make_course("syntax", description="Trees and movement.")
+
+        assert slugs(list_courses(client, {"q": "broca"})) == ["foundations"]
+
+    def test_never_matches_drafts(self, client):
+        make_course("published-aphasia", title="Aphasia")
+        make_course("draft-aphasia", title="Aphasia", status=CourseStatus.DRAFT)
+
+        assert slugs(list_courses(client, {"q": "aphasia"})) == ["published-aphasia"]
+
+    def test_blank_means_no_filter(self, client):
+        make_course("aphasia")
+        make_course("syntax")
+
+        assert len(list_courses(client, {"q": "  "})["results"]) == 2
+
+    def test_no_match_returns_an_empty_page(self, client):
+        make_course("aphasia")
+
+        body = list_courses(client, {"q": "quantum"})
+
+        assert body["count"] == 0
+        assert body["results"] == []
+
+
+class TestSort:
+    def make_priced(self):
+        """Two courses share each price, so every price sort has a tie to break."""
+        for slug, price, days_ago in [
+            ("cheap-old", 9900, 3),
+            ("cheap-new", 9900, 1),
+            ("dear-old", 19900, 2),
+            ("dear-new", 19900, 0),
+        ]:
+            age(make_course(slug, price_cents=price), days_ago)
+
+    def test_price_asc_breaks_ties_by_newest(self, client):
+        self.make_priced()
+
+        assert slugs(list_courses(client, {"sort": "price_asc"})) == [
+            "cheap-new",
+            "cheap-old",
+            "dear-new",
+            "dear-old",
+        ]
+
+    def test_price_desc_breaks_ties_by_newest(self, client):
+        self.make_priced()
+
+        assert slugs(list_courses(client, {"sort": "price_desc"})) == [
+            "dear-new",
+            "dear-old",
+            "cheap-new",
+            "cheap-old",
+        ]
+
+    def test_newest(self, client):
+        self.make_priced()
+
+        assert slugs(list_courses(client, {"sort": "newest"})) == [
+            "dear-new",
+            "cheap-new",
+            "dear-old",
+            "cheap-old",
+        ]
+
+    def test_an_unknown_sort_behaves_like_newest(self, client):
+        self.make_priced()
+
+        assert slugs(list_courses(client, {"sort": "popularity"})) == slugs(
+            list_courses(client, {"sort": "newest"})
+        )
+
+    def test_combines_with_search(self, client):
+        age(make_course("aphasia-cheap", title="Aphasia I", price_cents=9900), 0)
+        age(make_course("aphasia-dear", title="Aphasia II", price_cents=19900), 1)
+        make_course("syntax", price_cents=100)
+
+        body = list_courses(client, {"q": "aphasia", "sort": "price_desc"})
+
+        assert slugs(body) == ["aphasia-dear", "aphasia-cheap"]
 
 
 class TestPayload:
