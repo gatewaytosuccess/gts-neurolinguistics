@@ -113,3 +113,13 @@ export async function fetchCourses({
   const query = params.size ? `?${params}` : "";
   return publicFetch<Paginated<CourseSummary>>(`/api/courses/${query}`);
 }
+
+/**
+ * A published course. Throws `ApiError` with status 404 for a draft or unknown
+ * slug, and on any other failure.
+ */
+export async function fetchCourse(slug: string): Promise<CourseSummary> {
+  return publicFetch<CourseSummary>(
+    `/api/courses/${encodeURIComponent(slug)}/`,
+  );
+}
