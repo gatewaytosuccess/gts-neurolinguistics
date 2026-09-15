@@ -73,7 +73,7 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
-    class Meta:
+    class Meta(UUIDModel.Meta, AbstractBaseUser.Meta, PermissionsMixin.Meta):
         db_table = "users"
         ordering = ["-created_at"]
 

@@ -52,7 +52,7 @@ class Course(BaseModel):
 
     objects = CourseQuerySet.as_manager()
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         db_table = "courses"
         ordering = ["-created_at"]
 
@@ -69,7 +69,7 @@ class Module(BaseModel):
     title = models.CharField(max_length=255)
     position = models.PositiveIntegerField()
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         db_table = "modules"
         ordering = ["position"]
         constraints = [
@@ -96,7 +96,7 @@ class Lesson(BaseModel):
     is_preview = models.BooleanField(default=False, help_text="Free sample lesson.")
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         db_table = "lessons"
         ordering = ["position"]
         constraints = [

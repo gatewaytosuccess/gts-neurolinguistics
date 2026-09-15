@@ -43,7 +43,7 @@ class Coupon(BaseModel):
         max_length=20, choices=CouponStatus.choices, default=CouponStatus.ACTIVE
     )
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         db_table = "coupons"
         ordering = ["-created_at"]
         constraints = [
@@ -73,7 +73,7 @@ class Order(BaseModel):
     total_cents = models.PositiveIntegerField()
     payment_ref = models.CharField(max_length=255, blank=True, help_text="Provider transaction id.")
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         db_table = "orders"
         ordering = ["-created_at"]
 
@@ -88,7 +88,7 @@ class OrderItem(UUIDModel):
     )
     unit_price_cents = models.PositiveIntegerField(help_text="Price snapshot at purchase.")
 
-    class Meta:
+    class Meta(UUIDModel.Meta):
         db_table = "order_items"
         constraints = [
             models.UniqueConstraint(fields=["order", "course"], name="unique_course_per_order")
@@ -104,7 +104,7 @@ class Cart(UUIDModel):
         auto_now=True, help_text="Staleness signal for abandoned-cart email."
     )
 
-    class Meta:
+    class Meta(UUIDModel.Meta):
         db_table = "carts"
 
     def __str__(self):
@@ -118,7 +118,7 @@ class CartItem(UUIDModel):
     )
     added_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
+    class Meta(UUIDModel.Meta):
         db_table = "cart_items"
         ordering = ["added_at"]
         constraints = [

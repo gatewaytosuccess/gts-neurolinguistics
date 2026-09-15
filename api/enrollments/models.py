@@ -43,7 +43,7 @@ class Enrollment(UUIDModel):
     )
     revoked_at = models.DateTimeField(null=True, blank=True)
 
-    class Meta:
+    class Meta(UUIDModel.Meta):
         db_table = "enrollments"
         ordering = ["-enrolled_at"]
         constraints = [
@@ -65,7 +65,7 @@ class LessonProgress(BaseModel):
     last_position_seconds = models.PositiveIntegerField(default=0, help_text="Video resume point.")
     completed_at = models.DateTimeField(null=True, blank=True)
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         db_table = "lesson_progress"
         verbose_name_plural = "lesson progress"
         constraints = [

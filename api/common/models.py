@@ -19,5 +19,5 @@ class TimeStampedModel(models.Model):
 
 
 class BaseModel(UUIDModel, TimeStampedModel):
-    class Meta:
+    class Meta(UUIDModel.Meta, TimeStampedModel.Meta):
         abstract = True

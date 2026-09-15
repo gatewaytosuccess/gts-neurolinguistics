@@ -25,7 +25,7 @@ class Review(BaseModel):
         max_length=20, choices=ReviewStatus.choices, default=ReviewStatus.PUBLISHED
     )
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         db_table = "reviews"
         ordering = ["-created_at"]
         constraints = [
