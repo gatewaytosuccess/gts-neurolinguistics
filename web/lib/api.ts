@@ -40,6 +40,14 @@ export type CourseSummary = {
   rating_count: number;
 };
 
+export type Enrollment = {
+  id: string;
+  course_id: string;
+  course_slug: string;
+  source: "purchase" | "manual" | "comp";
+  enrolled_at: string;
+};
+
 // Shared cache: must never carry a token or return per-user data.
 async function publicFetch<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -88,6 +96,18 @@ export async function fetchCurrentUser(): Promise<CurrentUser | null> {
   if (!userId) return null;
 
   return apiFetch<CurrentUser>("/api/users/me/");
+}
+
+/**
+ * The signed-in user's active enrollments, including in draft courses. `null`
+ * if nobody is signed in. Throws `ApiError` with status 401 for a suspended
+ * account, and on any other failure.
+ */
+export async function fetchEnrollments(): Promise<Enrollment[] | null> {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  return apiFetch<Enrollment[]>("/api/users/me/enrollments/");
 }
 
 export const COURSE_SORTS = ["newest", "price_asc", "price_desc"] as const;
