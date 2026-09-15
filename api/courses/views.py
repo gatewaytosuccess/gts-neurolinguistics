@@ -36,3 +36,14 @@ class CourseListView(generics.ListAPIView):
 
         sort = self.request.query_params.get("sort", DEFAULT_SORT)
         return courses.order_by(*SORT_ORDERINGS.get(sort, SORT_ORDERINGS[DEFAULT_SORT]))
+
+
+class CourseDetailView(generics.RetrieveAPIView):
+    """A published course by slug; drafts 404 like unknown slugs."""
+
+    queryset = Course.objects.published().with_ratings()
+    serializer_class = CourseListSerializer
+    lookup_field = "slug"
+    # No authentication: a suspended user's token would otherwise 401 a public page.
+    authentication_classes = []
+    permission_classes = [AllowAny]
