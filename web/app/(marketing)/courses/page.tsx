@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import {
   fetchCourses,
+  fetchEnrollments,
   isCourseSort,
   type CourseSort,
   type CourseSummary,
@@ -38,13 +39,20 @@ export default async function CoursesPage({
   const requestedSort = firstValue(params.sort);
   const sort = isCourseSort(requestedSort) ? requestedSort : "newest";
 
-  let courses: CourseSummary[] | null = null;
+  const [catalog, enrollments] = await Promise.allSettled([
+    fetchCourses({ q, sort }),
+    fetchEnrollments(),
+  ]);
 
-  try {
-    courses = (await fetchCourses({ q, sort })).results;
-  } catch {
-    // An unreachable API should degrade to a page that says so, not a 500.
-  }
+  // An unreachable API should degrade to a page that says so, not a 500.
+  const courses = catalog.status === "fulfilled" ? catalog.value.results : null;
+
+  // A failed enrollments call (suspended account, API error) shows no enrollment state.
+  const enrolledCourseIds = new Set(
+    enrollments.status === "fulfilled"
+      ? (enrollments.value ?? []).map((enrollment) => enrollment.course_id)
+      : [],
+  );
 
   return (
     <div className="mx-auto max-w-[1200px] px-md py-2xl sm:px-margin lg:py-3xl">
@@ -81,7 +89,10 @@ export default async function CoursesPage({
           <ul className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
             {courses.map((course) => (
               <li key={course.id}>
-                <CourseCard course={course} />
+                <CourseCard
+                  course={course}
+                  enrolled={enrolledCourseIds.has(course.id)}
+                />
               </li>
             ))}
           </ul>
@@ -144,7 +155,13 @@ function CatalogControls({ q, sort }: { q: string; sort: CourseSort }) {
   );
 }
 
-function CourseCard({ course }: { course: CourseSummary }) {
+function CourseCard({
+  course,
+  enrolled,
+}: {
+  course: CourseSummary;
+  enrolled: boolean;
+}) {
   return (
     <Link
       href={`/courses/${course.slug}`}
@@ -170,9 +187,13 @@ function CourseCard({ course }: { course: CourseSummary }) {
 
       <div className="mt-auto pt-lg">
         <div className="border-t border-rule pt-md">
-          <span className="type-data-md">
-            {formatPrice(course.price_cents)}
-          </span>
+          {enrolled ? (
+            <span className="type-label-md text-tertiary-strong">Enrolled</span>
+          ) : (
+            <span className="type-data-md">
+              {formatPrice(course.price_cents)}
+            </span>
+          )}
         </div>
       </div>
     </Link>
