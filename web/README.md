@@ -27,6 +27,7 @@ web/
       _components/landing/  one component per landing section
       _content/landing.ts   landing copy as typed data
     dashboard/       signed-in home; reads /api/users/me
+    admin/           admin area: shared layout, side nav and access check
     sign-up/[[...sign-up]]/
     sign-in/[[...sign-in]]/
   components/        masthead, site footer, auth split panel
@@ -53,8 +54,12 @@ how Next actually routes a request, leaving protected data reachable. Each
 page, layout and route handler checks its own access instead.
 
 **Clerk Core 3 removed `<SignedIn>`, `<SignedOut>` and `<Protect>`.** Use
-`<Show when="signed-in">` / `<Show when={{ role: "admin" }}>`. Your training
-data probably predates this.
+`<Show when="signed-in">`. Your training data probably predates this.
+
+**The platform role comes from Django, not Clerk.** Read it from
+`fetchCurrentUser()` (`/api/users/me/`). `<Show when={{ role: "admin" }}>`
+checks a Clerk Organization role and doesn't apply. Admin pages call
+`requireAdmin()` from `app/admin/_lib/`.
 
 **Talking to Django.** Use `fetchCurrentUser()` or add a function beside it in
 `lib/api.ts`. It runs on the server, attaches the Clerk session token, and

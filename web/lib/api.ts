@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { cache } from "react";
 
 // Server-only: the browser never calls Django directly.
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -89,14 +90,15 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 /**
  * `null` if nobody is signed in. Throws if the API is unreachable or returns
- * non-2xx. Safe right after sign-up: the API provisions a missing row.
+ * non-2xx; `ApiError` with status 401 for a suspended account. Safe right
+ * after sign-up: the API provisions a missing row. Deduplicated per request.
  */
-export async function fetchCurrentUser(): Promise<CurrentUser | null> {
+export const fetchCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const { userId } = await auth();
   if (!userId) return null;
 
   return apiFetch<CurrentUser>("/api/users/me/");
-}
+});
 
 /**
  * The signed-in user's active enrollments, including in draft courses. `null`
