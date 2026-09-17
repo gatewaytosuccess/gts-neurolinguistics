@@ -26,6 +26,14 @@ _Avoid_: Permission, access level, tier
 The default role, and the word for a person taking a course. Every new sign-up is one.
 _Avoid_: Student, customer, subscriber
 
+**Admin**:
+A user whose role is `admin`, and the only role that can enter the admin area. Instructors cannot.
+_Avoid_: Staff, superuser, moderator
+
+**Admin area**:
+The part of the platform where admins manage courses, users, orders, coupons and reviews.
+_Avoid_: Django admin (a developer tool with its own login, not part of the product), back office, CMS
+
 ### Account status
 
 **Active**:

@@ -4,7 +4,7 @@
 
 This document outlines the pages and features needed for a platform to sell and deliver an online neurolinguistics course. Everything is grouped by the page it belongs to, so each page's spec is self-contained.
 
----
+______________________________________________________________________
 
 ## 2. Landing Page (not logged in)
 
@@ -23,7 +23,7 @@ This document outlines the pages and features needed for a platform to sell and 
 - Highlights of suggested/featured courses
 - Call-to-action to browse courses or resume learning
 
----
+______________________________________________________________________
 
 ## 4. All Courses Page
 
@@ -34,7 +34,7 @@ This document outlines the pages and features needed for a platform to sell and 
 - Course cards showing thumbnail, title, short description, price, rating (see Reviews, below)
 - Bundles surfaced here (multiple courses at a discount)
 
----
+______________________________________________________________________
 
 ## 5. Course Detail / Learning Page (after entering a course)
 
@@ -56,7 +56,7 @@ This document outlines the pages and features needed for a platform to sell and 
 - Discussion/Q&A per lesson — comment thread so learners can ask questions (adds perceived value, boosts retention)
 - **AI-assisted study tools (maybe)** — auto-generated lesson summaries, flashcards, or a Q&A chatbot trained on course material. Contingent on being able to keep the cost of running this reasonable and having the content/tooling to support it well; treat as a stretch feature rather than a launch requirement.
 
----
+______________________________________________________________________
 
 ## 6. Course Purchase Page
 
@@ -68,7 +68,7 @@ This document outlines the pages and features needed for a platform to sell and 
 - Order confirmation and receipt
 - Automatic enrollment on successful purchase
 
----
+______________________________________________________________________
 
 ## 7. Account: Sign-Up & Login
 
@@ -77,7 +77,7 @@ This document outlines the pages and features needed for a platform to sell and 
 - Login page with "forgot password" flow
 - Basic profile setup (name, avatar, learning goals — optional, for personalization)
 
----
+______________________________________________________________________
 
 ## 8. My Account / Settings Page
 
@@ -85,7 +85,7 @@ This document outlines the pages and features needed for a platform to sell and 
 - My Purchases / Billing history: invoices, receipts, subscription management, cancel/refund requests
 - Public profile (optional) — if a community/social angle is wanted later, could show certificates earned
 
----
+______________________________________________________________________
 
 ## 9. Admin Area
 
@@ -98,35 +98,35 @@ Admin sees the same learner-facing views, plus:
 - Grant courses to specific users (manual enrollment/comping access), including bulk enrollment
 - Manage users (view accounts, revoke access, reset passwords, ban/suspend)
 - Manage coupons/discounts and bundles
-- Analytics dashboard — enrollment numbers, revenue, completion rates, drop-off points per lesson
+- Admin dashboard — admin controls + analytics (enrollment numbers, revenue, completion rates, etc...
 - Notification system — push announcements (new course, live Q&A, etc.) to users
 - Bulk emailing
 - Role management — beyond admin/user, consider "instructor" or "support" roles if the team grows
 
----
+______________________________________________________________________
 
 ## 10. About / Instructor Page
 
 - Instructor bio and credentials — important for credibility in an academic niche
 
----
+______________________________________________________________________
 
 ## 11. Blog
 
 - Articles on neurolinguistics topics to drive organic search traffic and establish authority
 - SEO-optimized (metadata, structured data for rich search results)
 
----
+______________________________________________________________________
 
 ## 12. FAQ Page
 
----
+______________________________________________________________________
 
 ## 13. Contact / Support Page
 
 - Contact form or chat widget
 
----
+______________________________________________________________________
 
 ## 14. Legal Pages
 
@@ -134,7 +134,7 @@ Admin sees the same learner-facing views, plus:
 - Privacy Policy
 - Refund Policy
 
----
+______________________________________________________________________
 
 ## 15. Site-Wide / Cross-Cutting Features
 
@@ -147,7 +147,7 @@ These aren't a single page but affect the whole site:
 - Referral program (discount for referring friends)
 - Affiliate program (other educators/influencers promote the course for a commission)
 
----
+______________________________________________________________________
 
 ## 16. Growth / Later-Stage Ideas (not tied to a specific page)
 
@@ -155,7 +155,7 @@ These aren't a single page but affect the whole site:
 - Cohort-based scheduling (optional start dates with community pacing) as a premium tier, vs. self-paced default
 - Gamification — streaks, badges, leaderboards
 
----
+______________________________________________________________________
 
 ## 17. Suggested Tech/Architecture Notes
 
