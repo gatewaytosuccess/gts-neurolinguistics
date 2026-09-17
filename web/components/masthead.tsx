@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Show, UserButton } from "@clerk/nextjs";
 
+import { AdminLink } from "@/components/admin-link";
 import { MastheadLink } from "@/components/masthead-link";
 
 // Navy is structural only; interactive fills use Brass Seal.
@@ -45,6 +47,9 @@ export function Masthead() {
             >
               Dashboard
             </Link>
+            <Suspense fallback={null}>
+              <AdminLink />
+            </Suspense>
             <UserButton />
           </Show>
         </div>
