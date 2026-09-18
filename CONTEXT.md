@@ -68,6 +68,18 @@ _Avoid_: Owned, purchased
 The public list of published courses. Drafts never appear in it, not even to admins. Unpublishing a course takes it out of the catalog but does not un-enroll anyone: enrolled learners still reach it, just not through the catalog.
 _Avoid_: Library, store
 
+**Dashboard**:
+The signed-in learner's home: the courses they are enrolled in, their progress through each, and their stats. Not where a lesson is taken, and not the admin area's landing page.
+_Avoid_: My learning, portal, home
+
+**Lesson viewer**:
+Where an enrolled learner works through a course — modules, lessons, playback, and marking progress complete.
+_Avoid_: Lesson dashboard, course player, learning page
+
+**Note**:
+Something a learner writes for themselves while working through a lesson. Taken only in the lesson viewer, and read back from either the viewer or their dashboard.
+_Avoid_: Annotation, highlight, bookmark
+
 **Subscription**:
 Recurring paid access to every published course. It works by enrolling the subscriber in each course, including courses published later; cancelling revokes only the enrollments the subscription created, so courses bought outright are kept. Resubscribing reactivates those enrollments rather than creating new ones.
 _Avoid_: Membership, plan, all-access (all-access is marketing copy, not a domain term)
