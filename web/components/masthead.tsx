@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Show, UserButton } from "@clerk/nextjs";
 
-import { AdminLink } from "@/components/admin-link";
+import { MastheadAuth } from "@/components/masthead-auth";
 import { MastheadLink } from "@/components/masthead-link";
 
 // Navy is structural only; interactive fills use Brass Seal.
@@ -22,36 +21,12 @@ export function Masthead() {
 
         <div className="flex items-center gap-sm sm:gap-md">
           <MastheadLink href="/courses">Courses</MastheadLink>
-          <Show
-            when="signed-in"
-            fallback={
-              <>
-                <Link
-                  href="/sign-in"
-                  className="type-label-md whitespace-nowrap text-primary-subtle hover:text-paper-raised"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/sign-up"
-                  className="button-primary whitespace-nowrap"
-                >
-                  Get started
-                </Link>
-              </>
-            }
-          >
-            <Link
-              href="/dashboard"
-              className="type-label-md whitespace-nowrap text-primary-subtle hover:text-paper-raised"
-            >
-              Dashboard
-            </Link>
+          {/* Wide enough for the signed-out pair, so Courses holds still while the session resolves. */}
+          <div className="flex min-w-[184px] items-center justify-end gap-sm sm:gap-md">
             <Suspense fallback={null}>
-              <AdminLink />
+              <MastheadAuth />
             </Suspense>
-            <UserButton />
-          </Show>
+          </div>
         </div>
       </nav>
     </header>
