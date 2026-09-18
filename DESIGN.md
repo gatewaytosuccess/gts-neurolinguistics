@@ -30,7 +30,7 @@ colors:
   tertiary-strong: "#925100"
   tertiary-pale: "#F5E6CE"
 
-  # --- Dark mode: a separate design for the after-hours lesson dashboard ---
+  # --- Dark mode: a separate design for the after-hours lesson viewer ---
   dark-bg: "#15110B"
   dark-surface: "#211C15"
   dark-surface-overlay: "#302A22"
@@ -275,7 +275,7 @@ components:
     textColor: "{colors.meta-text}"
     typography: "{typography.caption}"
 
-  # --- Dark mode: the lesson dashboard ---
+  # --- Dark mode: the lesson viewer ---
   page-dark:
     backgroundColor: "{colors.dark-bg}"
     textColor: "{colors.dark-on-surface}"
@@ -354,13 +354,13 @@ components:
 
 ## Overview
 
-This is a course-sales page and a lesson dashboard for an academic neurolinguistics course — the cognitive science of how language lives in the brain — built for curious self-directed learners, not clinicians or linguists-in-training. Someone lands here from a search or a recommendation, needs to trust the institution behind it within the first few seconds, and then needs to feel like a welcome student rather than a sales lead.
+This is a course-sales page and a lesson viewer for an academic neurolinguistics course — the cognitive science of how language lives in the brain — built for curious self-directed learners, not clinicians or linguists-in-training. Someone lands here from a search or a recommendation, needs to trust the institution behind it within the first few seconds, and then needs to feel like a welcome student rather than a sales lead.
 
 The register is **Modern Collegiate**: the gravity of a university course catalog (a serif masthead, hairline rules, syllabus-style curriculum lists) crossed with the clarity and confidence of a well-made ed-tech sales page. It borrows Editorial Print's typographic authority and Archival Institutional's restraint, but refuses their coldness — this should read as a generous mentor with real credentials, not a library reading room. Where the credit-services parent brand is reserved and transactional, this site is allowed to be warm, because teaching is a different relationship than underwriting.
 
 **The inheritance.** The palette is not new. It's the GTS credit-services brand — Oxford navy, walnut ink, ledger-cream paper — carried over unchanged, because a shared visual lineage across the two properties is a trust signal in itself: a prospective student who has seen the parent brand should recognize this as the same institution, not a spun-off startup. What's new is a single signature color, **Brass Seal**, promoted from a hue that already existed in the parent brand's warning palette but had never been given a real job. Here it gets one: it is the entire visual vocabulary of "start," "continue," and "you're making progress."
 
-**The split.** The site has two distinct surfaces with two distinct lighting conditions. The marketing pages — home, curriculum, enrollment — are light-mode only in spirit: a prospectus, read once, in daylight, meant to persuade. The lesson dashboard, where an enrolled student actually watches lectures and works through modules, supports dark mode, because that's genuinely used at night, in bed, headphones in — the same reason a Kindle has a dark mode and a print catalog does not. Dark mode here is a real second design, not an inverted filter.
+**The split.** The site has two distinct surfaces with two distinct lighting conditions. The marketing pages — home, curriculum, enrollment — are light-mode only in spirit: a prospectus, read once, in daylight, meant to persuade. The lesson viewer, where an enrolled student actually watches lectures and works through modules, supports dark mode, because that's genuinely used at night, in bed, headphones in — the same reason a Kindle has a dark mode and a print catalog does not. Dark mode here is a real second design, not an inverted filter.
 
 **The sacrifice.** This direction gives up the stark, almost punitive seriousness of a pure Archival Institutional system — no shadows, no color, no warmth — in exchange for approachability, because a course that promises to demystify something (how language works in your head) should not itself feel intimidating to open. It also gives up some of the frictionless, indigo-and-gradient energy of a generic SaaS landing page, on purpose: this needs to look like it was built by people who take the subject seriously.
 
@@ -372,7 +372,7 @@ The register is **Modern Collegiate**: the gravity of a university course catalo
 - **Tertiary — Brass Seal (`#DB9E38`):** New to this site. The GTS warning ramp already contained a dark, muted brass ink (`#6E4200`) — the color of a brass fixture gone slightly dull. Brass Seal takes that same hue neighborhood and pushes it to full saturation and a mid lightness, the difference between a tarnished plate and a polished one. It is the *sole* driver of interaction — every primary button, the active nav state, progress fill, "new lesson" badges — and nothing else. `tertiary-strong` (`#925100`) is the text-safe darker step for links and hover states; `tertiary-pale` (`#F5E6CE`) is the tint for badge fills.
 - **Meta-text — Slate Ink (`#4A5A68`):** Unchanged from GTS. A cool grey-blue against an otherwise warm palette, reserved for timestamps, bylines, and metadata — the marginal note in a different pen.
 - **Semantic (error `#A12F2F` / success `#225A31` / warning `#6E4200`, each with a `-subtle` tint):** All unchanged from GTS. They already sit in the brand's family — brick red, deep pine, dulled brass — rather than reading as an imported Bootstrap triad, which is exactly why they were kept as-is instead of re-derived.
-- **Dark mode (`dark-*`):** A separate palette for the lesson dashboard, not an inversion. The base (`#15110B`) is a warm near-black in the same hue family as the paper stock — deliberately *not* the blue-tinted slate that most dark UIs default to, since this system has no blue neutral to begin with. Oxford Navy does not survive against it (a dark navy on near-black reads as mud), so `dark-primary` (`#A0C3DA`) — a lightened, desaturated step off the same primary ramp — carries brand-colored links and secondary actions instead; full-strength navy is retired to light mode only. Brass Seal survives the transition essentially intact, lightened slightly (`dark-tertiary` `#E1AD57`) since dark grounds make saturated color read hotter.
+- **Dark mode (`dark-*`):** A separate palette for the lesson viewer, not an inversion. The base (`#15110B`) is a warm near-black in the same hue family as the paper stock — deliberately *not* the blue-tinted slate that most dark UIs default to, since this system has no blue neutral to begin with. Oxford Navy does not survive against it (a dark navy on near-black reads as mud), so `dark-primary` (`#A0C3DA`) — a lightened, desaturated step off the same primary ramp — carries brand-colored links and secondary actions instead; full-strength navy is retired to light mode only. Brass Seal survives the transition essentially intact, lightened slightly (`dark-tertiary` `#E1AD57`) since dark grounds make saturated color read hotter.
 
 Every color in this system traces to a ramp, not a swatch: the ramps were built in OKLCH with lightness stepped on a perceptual curve, chroma tapering toward both ends, and hue bending a few degrees across each ramp (the given `primary` ramp already does this — it drifts from 232° at `primary-pale` to 264° at `primary`, which is why it reads as ink rather than as a gradient). No neutral in the system has R = G = B; every grey carries the same warm ~80–85° hue as the paper stock.
 
@@ -436,7 +436,7 @@ Borders are 1px solid `rule` at rest for plain dividers and 1px solid `border-st
 
 - **Do** treat Brass Seal (`tertiary`) as the only color that means "click this." If a second color starts appearing on buttons or active states, the accent has stopped being scarce and stopped being useful.
 - **Don't** use `primary` (Oxford Navy) as a button fill. It's the brand's structural color — masthead, wordmark, stat bands — never the interaction color. That job belongs to `tertiary`.
-- **Do** keep the marketing pages (home, curriculum, enrollment) light-mode only in spirit, even if the dark tokens exist. Dark mode is scoped to the lesson dashboard, where it has a real usage reason.
+- **Do** keep the marketing pages (home, curriculum, enrollment) light-mode only in spirit, even if the dark tokens exist. Dark mode is scoped to the lesson viewer, where it has a real usage reason.
 - **Don't** invert dark mode from the light palette. Every dark-mode color here was independently checked against its own background; reusing a light-mode hex on a dark ground will produce a contrast failure or a muddy navy.
 - **Do** pair every error state with a written message, never color alone.
 - **Don't** center headlines or hero copy. The system is flush-left and asymmetric throughout — a centered hero is the fastest way to make this look like a generic SaaS template instead of a course catalog.

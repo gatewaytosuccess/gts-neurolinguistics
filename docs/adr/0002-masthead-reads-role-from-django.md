@@ -4,7 +4,7 @@ The masthead's Admin link needs the user's role, and Clerk could carry it in `pu
 
 ## Consequences
 
-- **Every page with the masthead renders per request, the landing page included.** The link calls `auth()`, which makes the route dynamic even for signed-out visitors; only signed-in renders make the Django call.
+- **Every route inside `app/(site)/` renders per request, the landing page included.** The link calls `auth()`, which makes the route dynamic even for signed-out visitors; only signed-in renders make the Django call.
 - **The link fails closed.** A slow API delays only the link; an unreachable API or a suspended account hides it.
 - **Pages that already fetch the current user must not fetch it twice.** `fetchCurrentUser` is deduplicated per request.
 
