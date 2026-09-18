@@ -45,7 +45,7 @@ mirrors its names one-for-one: a color called `tertiary` there is
 height, tracking and font-variation settings. Don't reach for Tailwind's
 default palette or text scale.
 
-Dark mode is deliberately absent. DESIGN.md scopes it to the lesson dashboard,
+Dark mode is deliberately absent. DESIGN.md scopes it to the lesson viewer,
 which doesn't exist yet.
 
 **Auth checks belong in pages, not `proxy.ts`.** Clerk deprecated
@@ -59,7 +59,7 @@ page, layout and route handler checks its own access instead.
 **The platform role comes from Django, not Clerk.** Read it from
 `fetchCurrentUser()` (`/api/users/me/`). `<Show when={{ role: "admin" }}>`
 checks a Clerk Organization role and doesn't apply. Admin pages call
-`requireAdmin()` from `app/admin/_lib/`.
+`requireAdmin()` from `app/(site)/admin/_lib/`.
 
 **Talking to Django.** Use `fetchCurrentUser()` or add a function beside it in
 `lib/api.ts`. It runs on the server, attaches the Clerk session token, and

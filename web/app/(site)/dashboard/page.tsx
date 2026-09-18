@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 
-import { Masthead } from "@/components/masthead";
 import { fetchCurrentUser, type CurrentUser } from "@/lib/api";
 
 export const metadata: Metadata = {
@@ -21,19 +20,15 @@ export default async function DashboardPage() {
   }
 
   return (
-    <>
-      <Masthead />
-      <main className="mx-auto w-full max-w-[1200px] flex-1 px-md py-2xl sm:px-margin">
-        {user ? (
-          <AccountSummary user={user} />
-        ) : (
-          <p className="type-body-sm rounded-sm bg-warning-subtle px-sm py-sm text-warning">
-            The course API is not responding, so account details are
-            unavailable.
-          </p>
-        )}
-      </main>
-    </>
+    <main className="mx-auto w-full max-w-[1200px] flex-1 px-md py-2xl sm:px-margin">
+      {user ? (
+        <AccountSummary user={user} />
+      ) : (
+        <p className="type-body-sm rounded-sm bg-warning-subtle px-sm py-sm text-warning">
+          The course API is not responding, so account details are unavailable.
+        </p>
+      )}
+    </main>
   );
 }
 
