@@ -21,12 +21,10 @@ export function Masthead() {
 
         <div className="flex items-center gap-sm sm:gap-md">
           <MastheadLink href="/courses">Courses</MastheadLink>
-          {/* Wide enough for the signed-out pair, so Courses holds still while the session resolves. */}
-          <div className="flex min-w-[184px] items-center justify-end gap-sm sm:gap-md">
-            <Suspense fallback={null}>
-              <MastheadAuth />
-            </Suspense>
-          </div>
+          {/* Signed-out pair's width, so Courses holds still while the session resolves. */}
+          <Suspense fallback={<span aria-hidden className="w-[184px]" />}>
+            <MastheadAuth />
+          </Suspense>
         </div>
       </nav>
     </header>
