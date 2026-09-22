@@ -56,6 +56,26 @@ _Avoid_: Restore, undelete, reactivate
 **Course**:
 A purchasable unit of teaching, made of modules, which are made of lessons.
 
+**Curriculum**:
+A course's modules and lessons, in order.
+_Avoid_: Syllabus, outline, content
+
+**Lesson**:
+One step of a module, carrying a video, slides, a written body, or any mix of the three. A lesson with none of them is **empty**.
+_Avoid_: Unit, chapter, page
+
+**Preview lesson**:
+A lesson anyone can open without being enrolled, to sample the course.
+_Avoid_: Free lesson, sample, trailer
+
+**Draft**:
+A course that is not in the catalog. Every course starts as one, and unpublishing a course makes it one again; learners already enrolled still reach it.
+_Avoid_: Hidden, unlisted, private
+
+**Publish** / **Unpublish**:
+Putting a course into the catalog, and taking it back out. Unpublishing is always allowed; publishing needs a description, a thumbnail, and a curriculum with at least one module, no module without lessons and no empty lesson. A published course stays that way: an edit that would break those conditions is refused. Unpublishing, not deleting, is how a course anyone has enrolled in, bought or reviewed is retired.
+_Avoid_: Go live, launch, release, archive
+
 **Enrollment**:
 A user's access to a course, however they got it — bought, granted by an admin, comped, or through a subscription.
 _Avoid_: Purchase, subscription, membership
