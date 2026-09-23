@@ -90,6 +90,8 @@ enrollments: grant those in Django admin.
   `POST /api/admin/modules/<id>/move/` — add, rename, delete and reorder modules; admins only
 - `POST /api/admin/modules/<id>/lessons/`, `DELETE /api/admin/lessons/<id>/`,
   `POST /api/admin/lessons/<id>/move/` — add, delete and reorder lessons, across modules too; admins only
+- `GET`, `PATCH /api/admin/lessons/<id>/` — a lesson's title, body, preview flag and duration,
+  with its module and course; admins only
 - `/admin/` — Django admin (superuser password login; unrelated to Clerk)
 
 ## Tests

@@ -95,6 +95,26 @@ export type CurriculumModule = {
   lessons: CurriculumLesson[];
 };
 
+/** Everything about a lesson apart from its files. */
+export type AdminLesson = {
+  id: string;
+  title: string;
+  /** Markdown. */
+  body: string;
+  is_preview: boolean;
+  /** Positive, or `null` when unknown. */
+  duration_seconds: number | null;
+  position: number;
+  is_empty: boolean;
+  module: { id: string; title: string; position: number };
+  course: { id: string; title: string; status: CourseStatus };
+};
+
+export type AdminLessonInput = Pick<
+  AdminLesson,
+  "title" | "body" | "is_preview" | "duration_seconds"
+>;
+
 /** DRF's 400 body: messages per field, plus `non_field_errors`. */
 export type FieldErrors = Record<string, string[]>;
 
@@ -379,4 +399,30 @@ export async function moveAdminLesson(
       module_id: move.moduleId,
     }),
   });
+}
+
+/**
+ * Throws `ApiError` with status 404 for an unknown or malformed id, 403 for
+ * anyone but an admin, and on any other failure.
+ */
+export async function fetchAdminLesson(id: string): Promise<AdminLesson> {
+  return apiFetch<AdminLesson>(`/api/admin/lessons/${encodeURIComponent(id)}/`);
+}
+
+/**
+ * Only the fields given change. Throws `ApiError` with status 400 and a
+ * `FieldErrors` body for invalid input, 404 for an unknown id, 403 for anyone
+ * but an admin, and on any other failure.
+ */
+export async function updateAdminLesson(
+  id: string,
+  input: Partial<AdminLessonInput>,
+): Promise<AdminLesson> {
+  return apiFetch<AdminLesson>(
+    `/api/admin/lessons/${encodeURIComponent(id)}/`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
 }
