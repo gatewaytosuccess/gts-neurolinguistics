@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Form from "next/form";
 import Link from "next/link";
 
+import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import {
   fetchCourses,
   fetchEnrollments,
@@ -9,9 +10,7 @@ import {
   type CourseSort,
   type CourseSummary,
 } from "@/lib/api";
-
-import { formatPrice } from "../_components/landing/format";
-import { SortSelect } from "./_components/sort-select";
+import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Courses",
@@ -134,7 +133,7 @@ function CatalogControls({ q, sort }: { q: string; sort: CourseSort }) {
         <label htmlFor="catalog-sort" className="type-label-md block">
           Sort by
         </label>
-        <SortSelect
+        <AutoSubmitSelect
           id="catalog-sort"
           name="sort"
           defaultValue={sort}
@@ -145,7 +144,7 @@ function CatalogControls({ q, sort }: { q: string; sort: CourseSort }) {
               {label}
             </option>
           ))}
-        </SortSelect>
+        </AutoSubmitSelect>
       </div>
 
       <button type="submit" className="button-secondary">

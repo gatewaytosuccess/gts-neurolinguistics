@@ -41,6 +41,20 @@ export type CourseSummary = {
   rating_count: number;
 };
 
+export type CourseStatus = "draft" | "published";
+
+export type AdminCourseSummary = {
+  id: string;
+  title: string;
+  slug: string;
+  status: CourseStatus;
+  price_cents: number;
+  module_count: number;
+  lesson_count: number;
+  active_enrollment_count: number;
+  updated_at: string;
+};
+
 export type Enrollment = {
   id: string;
   course_id: string;
@@ -144,4 +158,43 @@ export async function fetchCourse(slug: string): Promise<CourseSummary> {
   return publicFetch<CourseSummary>(
     `/api/courses/${encodeURIComponent(slug)}/`,
   );
+}
+
+export const ADMIN_COURSE_SORTS = ["updated", "title", "created"] as const;
+
+export type AdminCourseSort = (typeof ADMIN_COURSE_SORTS)[number];
+
+export function isAdminCourseSort(value: unknown): value is AdminCourseSort {
+  return ADMIN_COURSE_SORTS.includes(value as AdminCourseSort);
+}
+
+export function isCourseStatus(value: unknown): value is CourseStatus {
+  return value === "draft" || value === "published";
+}
+
+/**
+ * Every course, drafts included, 20 per page. `q` matches title or slug; a
+ * blank `q` is no filter, and a missing `status` means both. Throws `ApiError`
+ * with status 404 for a page past the last, 403 for anyone but an admin, and
+ * on any other failure.
+ */
+export async function fetchAdminCourses({
+  q = "",
+  status,
+  sort = "updated",
+  page = 1,
+}: {
+  q?: string;
+  status?: CourseStatus;
+  sort?: AdminCourseSort;
+  page?: number;
+} = {}): Promise<Paginated<AdminCourseSummary>> {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set("q", q.trim());
+  if (status) params.set("status", status);
+  if (sort !== "updated") params.set("sort", sort);
+  if (page > 1) params.set("page", String(page));
+
+  const query = params.size ? `?${params}` : "";
+  return apiFetch<Paginated<AdminCourseSummary>>(`/api/admin/courses/${query}`);
 }

@@ -30,9 +30,11 @@ web/
     admin/           admin area: shared layout, side nav and access check
     sign-up/[[...sign-up]]/
     sign-in/[[...sign-in]]/
-  components/        masthead and its admin link, site footer, auth split panel
+  components/        masthead and its admin link, site footer, auth split panel,
+                     auto-submitting select
   lib/
     api.ts           server-side fetch against Django, Clerk token attached
+    format.ts        price formatting
     clerk-appearance.ts  DESIGN.md in Clerk's appearance vocabulary
 ```
 

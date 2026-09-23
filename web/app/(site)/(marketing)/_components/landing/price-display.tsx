@@ -1,4 +1,5 @@
-import { formatPrice } from "./format";
+import { formatPrice } from "@/lib/format";
+
 import type { Price } from "./types";
 
 export function PriceDisplay({ price }: { price: Price }) {
