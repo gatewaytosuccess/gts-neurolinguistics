@@ -83,6 +83,8 @@ enrollments: grant those in Django admin.
 - `GET /api/users/me/` — the signed-in user's account row
 - `POST /api/webhooks/clerk/` — Clerk `user.*` events, Svix-signed
 - `GET /api/admin/courses/` — every course, drafts included; admins only
+- `POST /api/admin/courses/` — create a draft course; admins only
+- `GET`, `PATCH /api/admin/courses/<id>/` — a course's details; admins only
 - `/admin/` — Django admin (superuser password login; unrelated to Clerk)
 
 ## Tests
