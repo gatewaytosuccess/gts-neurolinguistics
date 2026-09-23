@@ -1,12 +1,25 @@
-from django.db.models import Q
+from django.db.models import Count, Prefetch, Q
 from django.db.models.functions import Lower
-from rest_framework import generics
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from users.permissions import IsAdmin
 
-from .models import Course, CourseStatus
-from .serializers import AdminCourseListSerializer, AdminCourseSerializer, CourseListSerializer
+from . import curriculum
+from .models import Course, CourseStatus, Lesson, Module
+from .serializers import (
+    AdminCourseListSerializer,
+    AdminCourseSerializer,
+    AdminCurriculumModuleSerializer,
+    AdminLessonSerializer,
+    AdminModuleSerializer,
+    CourseListSerializer,
+    MoveLessonSerializer,
+    MoveModuleSerializer,
+)
 
 # Price sorts break ties by newest.
 SORT_ORDERINGS = {
@@ -101,3 +114,104 @@ class AdminCourseDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = AdminCourseSerializer
     permission_classes = [IsAdmin]
     http_method_names = ["get", "patch", "head", "options"]
+
+
+class AdminCurriculumView(generics.ListAPIView):
+    """A course's modules in order, each with its lessons in order.
+
+    ``learners_with_progress`` counts the learners whose progress a delete would
+    remove: per lesson, and per module across its lessons.
+    """
+
+    serializer_class = AdminCurriculumModuleSerializer
+    permission_classes = [IsAdmin]
+    pagination_class = None
+
+    def get_queryset(self):
+        course = get_object_or_404(Course, pk=self.kwargs["pk"])
+        lessons = Lesson.objects.annotate(learners_with_progress=Count("progress")).order_by(
+            "position"
+        )
+        return (
+            course.modules.annotate(
+                learners_with_progress=Count("lessons__progress__user", distinct=True)
+            )
+            .prefetch_related(Prefetch("lessons", queryset=lessons))
+            .order_by("position")
+        )
+
+
+class AdminModuleCreateView(APIView):
+    """Appends a module to a course."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        course = get_object_or_404(Course, pk=pk)
+        serializer = AdminModuleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        module = curriculum.add_module(course, serializer.validated_data["title"])
+        return Response(AdminModuleSerializer(module).data, status=status.HTTP_201_CREATED)
+
+
+class AdminModuleDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
+    """PATCH renames; DELETE also deletes its lessons and their progress."""
+
+    queryset = Module.objects.all()
+    serializer_class = AdminModuleSerializer
+    permission_classes = [IsAdmin]
+    http_method_names = ["patch", "delete", "options"]
+
+    def perform_destroy(self, instance):
+        curriculum.delete_module(instance)
+
+
+class AdminModuleMoveView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        module = get_object_or_404(Module, pk=pk)
+        serializer = MoveModuleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        module = curriculum.move_module(module, serializer.validated_data["position"])
+        return Response(AdminModuleSerializer(module).data)
+
+
+class AdminLessonCreateView(APIView):
+    """Appends an empty lesson to a module."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        module = get_object_or_404(Module, pk=pk)
+        serializer = AdminLessonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        lesson = curriculum.add_lesson(module, serializer.validated_data["title"])
+        return Response(AdminLessonSerializer(lesson).data, status=status.HTTP_201_CREATED)
+
+
+class AdminLessonDetailView(generics.DestroyAPIView):
+    """DELETE also deletes the lesson's progress."""
+
+    queryset = Lesson.objects.select_related("module")
+    permission_classes = [IsAdmin]
+
+    def perform_destroy(self, instance):
+        curriculum.delete_lesson(instance)
+
+
+class AdminLessonMoveView(APIView):
+    """Moves a lesson within its module, or to another module of the same course."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        lesson = get_object_or_404(Lesson.objects.select_related("module"), pk=pk)
+        serializer = MoveLessonSerializer(data=request.data, context={"lesson": lesson})
+        serializer.is_valid(raise_exception=True)
+        lesson = curriculum.move_lesson(
+            lesson,
+            position=serializer.validated_data.get("position"),
+            module=serializer.validated_data.get("module_id"),
+        )
+        return Response(AdminLessonSerializer(lesson).data)

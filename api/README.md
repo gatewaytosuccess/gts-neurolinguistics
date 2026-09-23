@@ -85,6 +85,11 @@ enrollments: grant those in Django admin.
 - `GET /api/admin/courses/` — every course, drafts included; admins only
 - `POST /api/admin/courses/` — create a draft course; admins only
 - `GET`, `PATCH /api/admin/courses/<id>/` — a course's details; admins only
+- `GET /api/admin/courses/<id>/curriculum/` — modules and lessons in order, with progress counts; admins only
+- `POST /api/admin/courses/<id>/modules/`, `PATCH`, `DELETE /api/admin/modules/<id>/`,
+  `POST /api/admin/modules/<id>/move/` — add, rename, delete and reorder modules; admins only
+- `POST /api/admin/modules/<id>/lessons/`, `DELETE /api/admin/lessons/<id>/`,
+  `POST /api/admin/lessons/<id>/move/` — add, delete and reorder lessons, across modules too; admins only
 - `/admin/` — Django admin (superuser password login; unrelated to Clerk)
 
 ## Tests
