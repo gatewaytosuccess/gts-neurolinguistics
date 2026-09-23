@@ -76,6 +76,25 @@ export type AdminCourseInput = {
   slug?: string;
 };
 
+export type CurriculumLesson = {
+  id: string;
+  title: string;
+  position: number;
+  is_empty: boolean;
+  is_preview: boolean;
+  /** Learners whose progress deleting the lesson would remove. */
+  learners_with_progress: number;
+};
+
+export type CurriculumModule = {
+  id: string;
+  title: string;
+  position: number;
+  /** Learners with progress on any of its lessons, each counted once. */
+  learners_with_progress: number;
+  lessons: CurriculumLesson[];
+};
+
 /** DRF's 400 body: messages per field, plus `non_field_errors`. */
 export type FieldErrors = Record<string, string[]>;
 
@@ -124,6 +143,7 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     );
   }
 
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
@@ -264,4 +284,99 @@ export async function updateAdminCourse(
       body: JSON.stringify(input),
     },
   );
+}
+
+/**
+ * A course's modules in order, each with its lessons in order. Throws
+ * `ApiError` with status 404 for an unknown course, 403 for anyone but an
+ * admin, and on any other failure.
+ */
+export async function fetchAdminCurriculum(
+  courseId: string,
+): Promise<CurriculumModule[]> {
+  return apiFetch<CurriculumModule[]>(
+    `/api/admin/courses/${encodeURIComponent(courseId)}/curriculum/`,
+  );
+}
+
+/*
+ * The curriculum edits below throw `ApiError` with status 400 and a
+ * `FieldErrors` body for invalid input, 404 for an unknown id, 403 for anyone
+ * but an admin, and on any other failure. Positions count from 1, and one out
+ * of range is clamped.
+ */
+
+/** Appends the module. */
+export async function createAdminModule(
+  courseId: string,
+  title: string,
+): Promise<void> {
+  await apiFetch(
+    `/api/admin/courses/${encodeURIComponent(courseId)}/modules/`,
+    { method: "POST", body: JSON.stringify({ title }) },
+  );
+}
+
+export async function renameAdminModule(
+  moduleId: string,
+  title: string,
+): Promise<void> {
+  await apiFetch(`/api/admin/modules/${encodeURIComponent(moduleId)}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ title }),
+  });
+}
+
+/** Also deletes its lessons and learners' progress on them. */
+export async function deleteAdminModule(moduleId: string): Promise<void> {
+  await apiFetch(`/api/admin/modules/${encodeURIComponent(moduleId)}/`, {
+    method: "DELETE",
+  });
+}
+
+export async function moveAdminModule(
+  moduleId: string,
+  position: number,
+): Promise<void> {
+  await apiFetch(`/api/admin/modules/${encodeURIComponent(moduleId)}/move/`, {
+    method: "POST",
+    body: JSON.stringify({ position }),
+  });
+}
+
+/** Appends an empty lesson. */
+export async function createAdminLesson(
+  moduleId: string,
+  title: string,
+): Promise<void> {
+  await apiFetch(
+    `/api/admin/modules/${encodeURIComponent(moduleId)}/lessons/`,
+    { method: "POST", body: JSON.stringify({ title }) },
+  );
+}
+
+/** Also deletes learners' progress on it. */
+export async function deleteAdminLesson(lessonId: string): Promise<void> {
+  await apiFetch(`/api/admin/lessons/${encodeURIComponent(lessonId)}/`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * `moduleId` must be a module of the same course, or the API returns 400. A
+ * missing `position` with a `moduleId` means last in that module.
+ */
+export async function moveAdminLesson(
+  lessonId: string,
+  move:
+    | { position: number; moduleId?: string }
+    | { position?: number; moduleId: string },
+): Promise<void> {
+  await apiFetch(`/api/admin/lessons/${encodeURIComponent(lessonId)}/move/`, {
+    method: "POST",
+    body: JSON.stringify({
+      position: move.position,
+      module_id: move.moduleId,
+    }),
+  });
 }

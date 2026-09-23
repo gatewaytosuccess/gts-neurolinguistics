@@ -2,7 +2,7 @@ from django.utils.text import slugify
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from .models import Course
+from .models import Course, Lesson, Module
 
 
 class CourseListSerializer(serializers.ModelSerializer):
@@ -122,4 +122,72 @@ class AdminCourseSerializer(serializers.ModelSerializer):
             title = attrs["title"] if "title" in attrs else course.title
             attrs["slug"] = unique_slug(title, exclude=course)
 
+        return attrs
+
+
+class AdminCurriculumLessonSerializer(serializers.ModelSerializer):
+    """Expects lessons annotated with ``learners_with_progress``."""
+
+    learners_with_progress = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Lesson
+        fields = ["id", "title", "position", "is_empty", "is_preview", "learners_with_progress"]
+        read_only_fields = fields
+
+
+class AdminCurriculumModuleSerializer(serializers.ModelSerializer):
+    """Expects modules annotated with ``learners_with_progress`` and lessons prefetched
+    the way ``AdminCurriculumLessonSerializer`` expects them."""
+
+    learners_with_progress = serializers.IntegerField(read_only=True)
+    lessons = AdminCurriculumLessonSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Module
+        fields = ["id", "title", "position", "learners_with_progress", "lessons"]
+        read_only_fields = fields
+
+
+class AdminModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Module
+        fields = ["id", "title", "position"]
+        read_only_fields = ["id", "position"]
+
+
+class AdminLessonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lesson
+        fields = ["id", "module", "title", "position", "is_empty", "is_preview"]
+        read_only_fields = ["id", "module", "position", "is_empty", "is_preview"]
+
+
+class MoveModuleSerializer(serializers.Serializer):
+    """Out-of-range positions are clamped, not refused."""
+
+    position = serializers.IntegerField()
+
+
+class MoveLessonSerializer(serializers.Serializer):
+    """Out-of-range positions are clamped, not refused.
+
+    ``position`` may be left out only with a ``module_id``, and then means last.
+    ``module_id`` must name a module of the lesson's course; it validates to that
+    ``Module``. Expects the lesson as ``context["lesson"]``.
+    """
+
+    position = serializers.IntegerField(required=False)
+    module_id = serializers.UUIDField(required=False)
+
+    def validate_module_id(self, value):
+        course_id = self.context["lesson"].module.course_id
+        module = Module.objects.filter(pk=value, course_id=course_id).first()
+        if module is None:
+            raise serializers.ValidationError("Choose a module of this lesson's course.")
+        return module
+
+    def validate(self, attrs):
+        if "position" not in attrs and "module_id" not in attrs:
+            raise serializers.ValidationError({"position": "This field is required."})
         return attrs

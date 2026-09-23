@@ -11,4 +11,31 @@ urlpatterns = [
         views.AdminCourseDetailView.as_view(),
         name="admin-course-detail",
     ),
+    path(
+        "admin/courses/<uuid:pk>/curriculum/",
+        views.AdminCurriculumView.as_view(),
+        name="admin-course-curriculum",
+    ),
+    path(
+        "admin/courses/<uuid:pk>/modules/",
+        views.AdminModuleCreateView.as_view(),
+        name="admin-module-create",
+    ),
+    path("admin/modules/<uuid:pk>/", views.AdminModuleDetailView.as_view(), name="admin-module"),
+    path(
+        "admin/modules/<uuid:pk>/move/",
+        views.AdminModuleMoveView.as_view(),
+        name="admin-module-move",
+    ),
+    path(
+        "admin/modules/<uuid:pk>/lessons/",
+        views.AdminLessonCreateView.as_view(),
+        name="admin-lesson-create",
+    ),
+    path("admin/lessons/<uuid:pk>/", views.AdminLessonDetailView.as_view(), name="admin-lesson"),
+    path(
+        "admin/lessons/<uuid:pk>/move/",
+        views.AdminLessonMoveView.as_view(),
+        name="admin-lesson-move",
+    ),
 ]

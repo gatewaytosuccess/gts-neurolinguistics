@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { ApiError, fetchAdminCourse, type AdminCourse } from "@/lib/api";
+import {
+  ApiError,
+  fetchAdminCourse,
+  fetchAdminCurriculum,
+  type AdminCourse,
+  type CurriculumModule,
+} from "@/lib/api";
 
 import { requireAdmin } from "../../_lib/require-admin";
 import { CourseDetailsForm } from "../_components/course-details-form";
+import { CurriculumOutline } from "../_components/curriculum-outline";
 import { StatusBadge } from "../_components/status-badge";
 import { updateCourse } from "../_lib/actions";
 import { courseDetailsValues } from "../_lib/course-details";
@@ -22,13 +29,23 @@ export default async function AdminCoursePage({
 
   const { id } = await params;
 
-  let course: AdminCourse | null;
-  try {
-    course = await fetchAdminCourse(id);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) notFound();
-    course = null;
+  const [courseResult, curriculumResult] = await Promise.allSettled([
+    fetchAdminCourse(id),
+    fetchAdminCurriculum(id),
+  ]);
+
+  let course: AdminCourse | null = null;
+  if (courseResult.status === "fulfilled") {
+    course = courseResult.value;
+  } else if (
+    courseResult.reason instanceof ApiError &&
+    courseResult.reason.status === 404
+  ) {
+    notFound();
   }
+
+  const modules: CurriculumModule[] | null =
+    curriculumResult.status === "fulfilled" ? curriculumResult.value : null;
 
   if (!course) {
     return (
@@ -58,6 +75,19 @@ export default async function AdminCoursePage({
           slugLocked={course.status === "published"}
           submitLabel="Save changes"
         />
+      </section>
+
+      <section aria-labelledby="curriculum-heading" className="mt-3xl">
+        <h2 id="curriculum-heading" className="type-headline-sm">
+          Curriculum
+        </h2>
+        {modules === null ? (
+          <p className="type-body-sm mt-md rounded-sm bg-warning-subtle px-sm py-sm text-warning">
+            The course API is not responding, so the curriculum is unavailable.
+          </p>
+        ) : (
+          <CurriculumOutline courseId={course.id} modules={modules} />
+        )}
       </section>
     </div>
   );
