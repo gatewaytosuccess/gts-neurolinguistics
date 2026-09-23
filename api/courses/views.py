@@ -14,6 +14,7 @@ from .serializers import (
     AdminCourseListSerializer,
     AdminCourseSerializer,
     AdminCurriculumModuleSerializer,
+    AdminLessonDetailSerializer,
     AdminLessonSerializer,
     AdminModuleSerializer,
     CourseListSerializer,
@@ -190,11 +191,13 @@ class AdminLessonCreateView(APIView):
         return Response(AdminLessonSerializer(lesson).data, status=status.HTTP_201_CREATED)
 
 
-class AdminLessonDetailView(generics.DestroyAPIView):
-    """DELETE also deletes the lesson's progress."""
+class AdminLessonDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Updates are PATCH only. DELETE also deletes the lesson's progress."""
 
-    queryset = Lesson.objects.select_related("module")
+    queryset = Lesson.objects.select_related("module__course")
+    serializer_class = AdminLessonDetailSerializer
     permission_classes = [IsAdmin]
+    http_method_names = ["get", "patch", "delete", "head", "options"]
 
     def perform_destroy(self, instance):
         curriculum.delete_lesson(instance)

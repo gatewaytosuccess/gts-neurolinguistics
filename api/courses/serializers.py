@@ -163,6 +163,51 @@ class AdminLessonSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "module", "position", "is_empty", "is_preview"]
 
 
+class LessonModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Module
+        fields = ["id", "title", "position"]
+        read_only_fields = fields
+
+
+class LessonCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ["id", "title", "status"]
+        read_only_fields = fields
+
+
+class AdminLessonDetailSerializer(serializers.ModelSerializer):
+    """Everything about a lesson apart from its files, with its module and course.
+
+    ``duration_seconds`` is positive or null.
+    """
+
+    module = LessonModuleSerializer(read_only=True)
+    course = LessonCourseSerializer(source="module.course", read_only=True)
+
+    class Meta:
+        model = Lesson
+        fields = [
+            "id",
+            "title",
+            "body",
+            "is_preview",
+            "duration_seconds",
+            "position",
+            "is_empty",
+            "module",
+            "course",
+        ]
+        read_only_fields = ["id", "position", "is_empty", "module", "course"]
+        extra_kwargs = {
+            "duration_seconds": {
+                "min_value": 1,
+                "error_messages": {"min_value": "The duration must be greater than 0."},
+            },
+        }
+
+
 class MoveModuleSerializer(serializers.Serializer):
     """Out-of-range positions are clamped, not refused."""
 

@@ -31,7 +31,7 @@ web/
     sign-up/[[...sign-up]]/
     sign-in/[[...sign-in]]/
   components/        masthead and its admin link, site footer, auth split panel,
-                     auto-submitting select
+                     auto-submitting select, Markdown renderer (raw HTML as text)
   lib/
     api.ts           server-side fetch against Django, Clerk token attached
     format.ts        price formatting
