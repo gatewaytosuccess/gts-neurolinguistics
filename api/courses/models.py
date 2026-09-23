@@ -11,12 +11,6 @@ class CourseStatus(models.TextChoices):
     PUBLISHED = "published", "Published"
 
 
-class ContentType(models.TextChoices):
-    VIDEO = "video", "Video"
-    SLIDES = "slides", "Slides"
-    TEXT = "text", "Text"
-
-
 class CourseQuerySet(models.QuerySet):
     def published(self):
         return self.filter(status=CourseStatus.PUBLISHED)
@@ -104,11 +98,9 @@ class Module(BaseModel):
 class Lesson(BaseModel):
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="lessons")
     title = models.CharField(max_length=255)
-    content_type = models.CharField(max_length=20, choices=ContentType.choices)
-    content_url = models.URLField(
-        max_length=500, blank=True, help_text="S3 asset: video or slides."
-    )
-    content_body = models.TextField(blank=True, help_text="Rich text lessons.")
+    video_key = models.CharField(max_length=500, blank=True, help_text="Private bucket key.")
+    slides_key = models.CharField(max_length=500, blank=True, help_text="Private bucket key.")
+    body = models.TextField(blank=True, help_text="Markdown.")
     position = models.PositiveIntegerField()
     is_preview = models.BooleanField(default=False, help_text="Free sample lesson.")
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
@@ -126,3 +118,7 @@ class Lesson(BaseModel):
 
     def __str__(self):
         return self.title
+
+    @property
+    def is_empty(self):
+        return not (self.video_key or self.slides_key or self.body)

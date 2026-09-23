@@ -75,14 +75,16 @@ Account status splits along one axis: who can clear it.
 | id               | uuid      | PK                        |                            |
 | module_id        | uuid      | FK → MODULES.id, not null |                            |
 | title            | string    | not null                  |                            |
-| content_type     | enum      | not null                  | `video \| slides \| text`  |
-| content_url      | string    | nullable                  | Video / slides asset       |
-| content_body     | text      | nullable                  | Text lessons               |
+| video_key        | string    |                           | Private bucket object key  |
+| slides_key       | string    |                           | Private bucket object key  |
+| body             | text      |                           | Markdown                   |
 | position         | int       | not null                  | Ordering within the module |
 | is_preview       | bool      | not null, default `false` | Free sample lesson         |
 | duration_seconds | int       | nullable                  |                            |
 | created_at       | timestamp | not null                  |                            |
 | updated_at       | timestamp | not null                  |                            |
+
+A lesson with no video, slides or body is empty.
 
 ### ENROLLMENTS
 
