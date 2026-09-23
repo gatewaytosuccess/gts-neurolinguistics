@@ -16,6 +16,7 @@ import {
 import { formatPrice } from "@/lib/format";
 
 import { requireAdmin } from "../_lib/require-admin";
+import { STATUS_LABELS, StatusBadge } from "./_components/status-badge";
 
 export const metadata: Metadata = {
   title: "Courses · Admin",
@@ -25,11 +26,6 @@ const SORT_LABELS: Record<AdminCourseSort, string> = {
   updated: "Recently updated",
   title: "Title",
   created: "Recently created",
-};
-
-const STATUS_LABELS: Record<CourseStatus, string> = {
-  draft: "Draft",
-  published: "Published",
 };
 
 type Filters = {
@@ -89,7 +85,12 @@ export default async function AdminCoursesPage({
   return (
     <div>
       <p className="type-label-caps text-accent">Admin area</p>
-      <h1 className="type-headline-md measure mt-md">Courses</h1>
+      <div className="mt-md flex flex-wrap items-center justify-between gap-md">
+        <h1 className="type-headline-md measure">Courses</h1>
+        <Link href="/admin/courses/new" className="button-primary">
+          New course
+        </Link>
+      </div>
 
       <ListControls filters={filters} />
 
@@ -253,9 +254,12 @@ function CourseTable({ courses }: { courses: AdminCourseSummary[] }) {
           {courses.map((course) => (
             <tr key={course.id} className="border-b border-rule align-top">
               <th scope="row" className="px-sm py-sm font-normal">
-                <span className="type-label-lg block text-accent-strong">
+                <Link
+                  href={`/admin/courses/${course.id}`}
+                  className="type-label-lg block text-accent-strong hover:text-primary hover:underline"
+                >
                   {course.title}
-                </span>
+                </Link>
                 <span className="type-caption block text-meta-text">
                   {course.slug}
                 </span>
@@ -281,21 +285,6 @@ function CourseTable({ courses }: { courses: AdminCourseSummary[] }) {
         </tbody>
       </table>
     </div>
-  );
-}
-
-// Not a chip: tertiary-pale chips are reserved for lesson status.
-function StatusBadge({ status }: { status: CourseStatus }) {
-  return (
-    <span
-      className={`type-label-caps inline-block whitespace-nowrap rounded-full px-sm py-xs ${
-        status === "published"
-          ? "bg-success-subtle text-success"
-          : "bg-paper-dim text-accent"
-      }`}
-    >
-      {STATUS_LABELS[status]}
-    </span>
   );
 }
 

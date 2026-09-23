@@ -8,6 +8,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** The parsed JSON error body, when the API sent one. */
+    readonly body?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
@@ -55,6 +57,28 @@ export type AdminCourseSummary = {
   updated_at: string;
 };
 
+export type AdminCourse = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  price_cents: number;
+  status: CourseStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminCourseInput = {
+  title: string;
+  description: string;
+  price_cents: number;
+  /** Blank or missing: generated from the title. */
+  slug?: string;
+};
+
+/** DRF's 400 body: messages per field, plus `non_field_errors`. */
+export type FieldErrors = Record<string, string[]>;
+
 export type Enrollment = {
   id: string;
   course_id: string;
@@ -96,6 +120,7 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(
       response.status,
       `${init.method ?? "GET"} ${path} failed`,
+      await response.json().catch(() => undefined),
     );
   }
 
@@ -197,4 +222,46 @@ export async function fetchAdminCourses({
 
   const query = params.size ? `?${params}` : "";
   return apiFetch<Paginated<AdminCourseSummary>>(`/api/admin/courses/${query}`);
+}
+
+/**
+ * Any course, drafts included. Throws `ApiError` with status 404 for an
+ * unknown or malformed id, 403 for anyone but an admin, and on any other
+ * failure.
+ */
+export async function fetchAdminCourse(id: string): Promise<AdminCourse> {
+  return apiFetch<AdminCourse>(`/api/admin/courses/${encodeURIComponent(id)}/`);
+}
+
+/**
+ * Always creates a draft. Throws `ApiError` with status 400 and a
+ * `FieldErrors` body for invalid input, 403 for anyone but an admin, and on
+ * any other failure.
+ */
+export async function createAdminCourse(
+  input: AdminCourseInput,
+): Promise<AdminCourse> {
+  return apiFetch<AdminCourse>("/api/admin/courses/", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Only the fields given change. Throws `ApiError` with status 400 and a
+ * `FieldErrors` body for invalid input (including a new slug on a published
+ * course), 404 for an unknown id, 403 for anyone but an admin, and on any
+ * other failure.
+ */
+export async function updateAdminCourse(
+  id: string,
+  input: Partial<AdminCourseInput>,
+): Promise<AdminCourse> {
+  return apiFetch<AdminCourse>(
+    `/api/admin/courses/${encodeURIComponent(id)}/`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
 }

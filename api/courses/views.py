@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from users.permissions import IsAdmin
 
 from .models import Course, CourseStatus
-from .serializers import AdminCourseListSerializer, CourseListSerializer
+from .serializers import AdminCourseListSerializer, AdminCourseSerializer, CourseListSerializer
 
 # Price sorts break ties by newest.
 SORT_ORDERINGS = {
@@ -61,8 +61,8 @@ ADMIN_SORT_ORDERINGS = {
 ADMIN_DEFAULT_SORT = "updated"
 
 
-class AdminCourseListView(generics.ListAPIView):
-    """Every course, drafts included.
+class AdminCourseListView(generics.ListCreateAPIView):
+    """Every course, drafts included; POST creates a draft.
 
     ``q`` matches title or slug, case-insensitively; blank means no filter.
     ``status`` is a ``CourseStatus`` value; missing or unknown means all.
@@ -70,8 +70,12 @@ class AdminCourseListView(generics.ListAPIView):
     ``updated``, never a 400.
     """
 
-    serializer_class = AdminCourseListSerializer
     permission_classes = [IsAdmin]
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return AdminCourseSerializer
+        return AdminCourseListSerializer
 
     def get_queryset(self):
         courses = Course.objects.with_counts()
@@ -88,3 +92,12 @@ class AdminCourseListView(generics.ListAPIView):
         return courses.order_by(
             *ADMIN_SORT_ORDERINGS.get(sort, ADMIN_SORT_ORDERINGS[ADMIN_DEFAULT_SORT])
         )
+
+
+class AdminCourseDetailView(generics.RetrieveUpdateAPIView):
+    """Any course, drafts included. Updates are PATCH only."""
+
+    queryset = Course.objects.all()
+    serializer_class = AdminCourseSerializer
+    permission_classes = [IsAdmin]
+    http_method_names = ["get", "patch", "head", "options"]
