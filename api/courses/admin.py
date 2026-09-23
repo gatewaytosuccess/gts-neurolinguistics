@@ -6,7 +6,15 @@ from .models import Course, Lesson, Module
 class LessonInline(admin.TabularInline):
     model = Lesson
     extra = 0
-    fields = ("position", "title", "content_type", "is_preview", "duration_seconds")
+    fields = (
+        "position",
+        "title",
+        "video_key",
+        "slides_key",
+        "body",
+        "is_preview",
+        "duration_seconds",
+    )
 
 
 class ModuleInline(admin.TabularInline):
@@ -33,6 +41,10 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ("title", "module", "position", "content_type", "is_preview")
-    list_filter = ("content_type", "is_preview")
+    list_display = ("title", "module", "position", "empty", "is_preview")
+    list_filter = ("is_preview",)
     search_fields = ("title",)
+
+    @admin.display(boolean=True)
+    def empty(self, lesson):
+        return lesson.is_empty

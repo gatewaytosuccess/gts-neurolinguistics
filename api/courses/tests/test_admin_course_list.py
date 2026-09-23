@@ -4,7 +4,7 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from courses.models import ContentType, Course, CourseStatus, Lesson, Module
+from courses.models import Course, CourseStatus, Lesson, Module
 from enrollments.models import Enrollment, EnrollmentSource, EnrollmentStatus
 from users.authentication import ClerkAuthentication
 from users.models import Role, User
@@ -21,9 +21,7 @@ def make_course(slug, status=CourseStatus.PUBLISHED, **fields):
 def add_module(course, lessons=0):
     module = Module.objects.create(course=course, title="Module", position=course.modules.count())
     for position in range(lessons):
-        Lesson.objects.create(
-            module=module, title="Lesson", content_type=ContentType.TEXT, position=position
-        )
+        Lesson.objects.create(module=module, title="Lesson", position=position)
     return module
 
 

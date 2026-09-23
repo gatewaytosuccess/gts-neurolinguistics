@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from courses.models import ContentType, Course, CourseStatus, Lesson, Module
+from courses.models import Course, CourseStatus, Lesson, Module
 from reviews.models import Review, ReviewStatus
 from users.models import Role, User
 
@@ -20,16 +20,16 @@ COURSES = [
             (
                 "Mapping language",
                 [
-                    ("Broca, Wernicke and the lesion method", ContentType.VIDEO),
-                    ("The classical language network", ContentType.SLIDES),
-                    ("Reading: a short history of localization", ContentType.TEXT),
+                    "Broca, Wernicke and the lesion method",
+                    "The classical language network",
+                    "Reading: a short history of localization",
                 ],
             ),
             (
                 "Modern methods",
                 [
-                    ("What fMRI can and can't tell us", ContentType.VIDEO),
-                    ("EEG and the N400", ContentType.SLIDES),
+                    "What fMRI can and can't tell us",
+                    "EEG and the N400",
                 ],
             ),
         ],
@@ -44,16 +44,16 @@ COURSES = [
             (
                 "Kinds of aphasia",
                 [
-                    ("Fluent and non-fluent aphasia", ContentType.VIDEO),
-                    ("Case notes: anomia", ContentType.TEXT),
+                    "Fluent and non-fluent aphasia",
+                    "Case notes: anomia",
                 ],
             ),
             (
                 "Recovery",
                 [
-                    ("Plasticity after stroke", ContentType.SLIDES),
-                    ("Speech therapy approaches", ContentType.VIDEO),
-                    ("Reading: living with aphasia", ContentType.TEXT),
+                    "Plasticity after stroke",
+                    "Speech therapy approaches",
+                    "Reading: living with aphasia",
                 ],
             ),
         ],
@@ -68,15 +68,15 @@ COURSES = [
             (
                 "Two languages, one brain",
                 [
-                    ("Shared and separate representations", ContentType.VIDEO),
-                    ("Language control and switching", ContentType.SLIDES),
+                    "Shared and separate representations",
+                    "Language control and switching",
                 ],
             ),
             (
                 "Acquisition",
                 [
-                    ("Critical periods, revisited", ContentType.TEXT),
-                    ("Learning a language as an adult", ContentType.VIDEO),
+                    "Critical periods, revisited",
+                    "Learning a language as an adult",
                 ],
             ),
         ],
@@ -91,15 +91,15 @@ COURSES = [
             (
                 "Language without sound",
                 [
-                    ("Is sign language processed like speech?", ContentType.VIDEO),
-                    ("Aphasia in signers", ContentType.TEXT),
+                    "Is sign language processed like speech?",
+                    "Aphasia in signers",
                 ],
             ),
             (
                 "Space as grammar",
                 [
-                    ("Spatial syntax", ContentType.SLIDES),
-                    ("Reading: home sign", ContentType.TEXT),
+                    "Spatial syntax",
+                    "Reading: home sign",
                 ],
             ),
         ],
@@ -147,8 +147,7 @@ REVIEWS = [
     ),
 ]
 
-TEXT_BODY = "Placeholder lesson text for local development."
-VIDEO_SECONDS = 600
+LESSON_BODY = "Placeholder lesson text for local development."
 
 
 class Command(BaseCommand):
@@ -188,17 +187,13 @@ class Command(BaseCommand):
             module, _ = Module.objects.update_or_create(
                 course=course, position=module_position, defaults={"title": module_title}
             )
-            for lesson_position, (lesson_title, content_type) in enumerate(lessons, start=1):
+            for lesson_position, lesson_title in enumerate(lessons, start=1):
                 Lesson.objects.update_or_create(
                     module=module,
                     position=lesson_position,
                     defaults={
                         "title": lesson_title,
-                        "content_type": content_type,
-                        "content_body": TEXT_BODY if content_type == ContentType.TEXT else "",
-                        "duration_seconds": (
-                            VIDEO_SECONDS if content_type == ContentType.VIDEO else None
-                        ),
+                        "body": LESSON_BODY,
                         "is_preview": module_position == 1 and lesson_position == 1,
                     },
                 )

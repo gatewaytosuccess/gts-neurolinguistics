@@ -47,7 +47,7 @@ def test_seeds_the_cases_the_catalog_needs(debug):
         lessons = Lesson.objects.filter(module__course=course)
         assert course.modules.count() == 2
         assert lessons.filter(is_preview=True).count() == 1
-        assert lessons.values("content_type").distinct().count() > 1
+        assert not any(lesson.is_empty for lesson in lessons)
 
     published = Course.objects.filter(status=CourseStatus.PUBLISHED).annotate(
         published_reviews=Count("reviews", filter=Q(reviews__status=ReviewStatus.PUBLISHED))
