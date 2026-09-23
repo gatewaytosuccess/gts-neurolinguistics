@@ -3,8 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ApiError, fetchCourse, type CourseSummary } from "@/lib/api";
-
-import { formatPrice } from "../../_components/landing/format";
+import { formatPrice } from "@/lib/format";
 
 /**
  * `null` if the API is unreachable or errors. Throws Next's not-found error on

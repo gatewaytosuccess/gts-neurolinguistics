@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { formatPrice } from "./format";
+import { formatPrice } from "@/lib/format";
+
 import { PlaceholderBadge } from "./placeholder-badge";
 import { SectionHeading } from "./section-heading";
 import type { CoursePreview as Course } from "./types";

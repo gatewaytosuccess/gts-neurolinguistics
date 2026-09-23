@@ -22,7 +22,7 @@ api/
       prod.py        RDS + TLS + security headers
     urls.py          / admin/ and /api/
   common/            UUID + timestamp base models, /api/health/
-  users/             custom User model, Clerk JWT authentication, Clerk webhook
+  users/             custom User model, Clerk JWT authentication, Clerk webhook, IsAdmin
   courses/           Course -> Module -> Lesson
   enrollments/       Enrollment, LessonProgress
   commerce/          Cart, CartItem, Order, OrderItem, Coupon
@@ -82,6 +82,7 @@ enrollments: grant those in Django admin.
 - `GET /api/health/` — liveness plus a database connection check
 - `GET /api/users/me/` — the signed-in user's account row
 - `POST /api/webhooks/clerk/` — Clerk `user.*` events, Svix-signed
+- `GET /api/admin/courses/` — every course, drafts included; admins only
 - `/admin/` — Django admin (superuser password login; unrelated to Clerk)
 
 ## Tests

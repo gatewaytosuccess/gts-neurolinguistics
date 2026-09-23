@@ -12,7 +12,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     href: "/admin/courses",
     description:
       "Create courses, edit their curriculum and lessons, and publish them.",
-    available: false,
+    available: true,
   },
   {
     label: "Users",

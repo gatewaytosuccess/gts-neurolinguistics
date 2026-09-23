@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from common.models import BaseModel
+from enrollments.models import EnrollmentStatus
 from reviews.models import ReviewStatus
 
 
@@ -29,6 +30,22 @@ class CourseQuerySet(models.QuerySet):
         return self.annotate(
             rating_average=models.Avg("reviews__rating", filter=published_reviews),
             rating_count=models.Count("reviews", filter=published_reviews),
+        )
+
+    def with_counts(self):
+        """Adds ``module_count``, ``lesson_count`` and ``active_enrollment_count``.
+
+        Revoked enrollments are not counted.
+        """
+        # distinct: the joins fan out, so each count would otherwise multiply the others.
+        return self.annotate(
+            module_count=models.Count("modules", distinct=True),
+            lesson_count=models.Count("modules__lessons", distinct=True),
+            active_enrollment_count=models.Count(
+                "enrollments",
+                filter=models.Q(enrollments__status=EnrollmentStatus.ACTIVE),
+                distinct=True,
+            ),
         )
 
 
