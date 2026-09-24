@@ -9,7 +9,7 @@ is the only client; Django serves no templates apart from the admin.
 - PostgreSQL (local for dev, Amazon RDS in production)
 - Clerk for authentication — Django verifies Clerk session JWTs, it does not
   own passwords
-- Amazon S3 for lesson media
+- Amazon S3 for lesson media and thumbnails, with CloudFront serving thumbnails
 
 ## Layout
 
@@ -21,7 +21,7 @@ api/
       dev.py         local development (DEBUG, browsable API, console email)
       prod.py        RDS + TLS + security headers
     urls.py          / admin/ and /api/
-  common/            UUID + timestamp base models, /api/health/
+  common/            UUID + timestamp base models, /api/health/, the S3 storage module
   users/             custom User model, Clerk JWT authentication, Clerk webhook, IsAdmin
   courses/           Course -> Module -> Lesson
   enrollments/       Enrollment, LessonProgress
@@ -85,6 +85,9 @@ enrollments: grant those in Django admin.
 - `GET /api/admin/courses/` — every course, drafts included; admins only
 - `POST /api/admin/courses/` — create a draft course; admins only
 - `GET`, `PATCH /api/admin/courses/<id>/` — a course's details; admins only
+- `POST /api/admin/courses/<id>/thumbnail/upload/` — a presigned POST for a new thumbnail
+  (JPEG, PNG or WebP, up to 5 MB); `PATCH` its `thumbnail_key` onto the course to save it,
+  or a blank key to remove it; admins only
 - `GET /api/admin/courses/<id>/curriculum/` — modules and lessons in order, with progress counts; admins only
 - `POST /api/admin/courses/<id>/modules/`, `PATCH`, `DELETE /api/admin/modules/<id>/`,
   `POST /api/admin/modules/<id>/move/` — add, rename, delete and reorder modules; admins only

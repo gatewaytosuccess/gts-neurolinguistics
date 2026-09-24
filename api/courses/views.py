@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from users.permissions import IsAdmin
 
-from . import curriculum
+from . import curriculum, thumbnails
 from .models import Course, CourseStatus, Lesson, Module
 from .serializers import (
     AdminCourseListSerializer,
@@ -20,6 +20,7 @@ from .serializers import (
     CourseListSerializer,
     MoveLessonSerializer,
     MoveModuleSerializer,
+    ThumbnailUploadSerializer,
 )
 
 # Price sorts break ties by newest.
@@ -109,12 +110,38 @@ class AdminCourseListView(generics.ListCreateAPIView):
 
 
 class AdminCourseDetailView(generics.RetrieveUpdateAPIView):
-    """Any course, drafts included. Updates are PATCH only."""
+    """Any course, drafts included. Updates are PATCH only.
+
+    A replaced or removed thumbnail's object is deleted after the change commits.
+    """
 
     queryset = Course.objects.all()
     serializer_class = AdminCourseSerializer
     permission_classes = [IsAdmin]
     http_method_names = ["get", "patch", "head", "options"]
+
+    def perform_update(self, serializer):
+        old_key = serializer.instance.thumbnail_key
+        course = serializer.save()
+        if old_key and old_key != course.thumbnail_key:
+            thumbnails.delete_after_commit(old_key)
+
+
+class AdminThumbnailUploadView(APIView):
+    """A presigned POST for a new thumbnail, with its ``key``.
+
+    The course is unchanged until that key is PATCHed onto it.
+    """
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        course = get_object_or_404(Course, pk=pk)
+        serializer = ThumbnailUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            thumbnails.presign_upload(course, serializer.validated_data["content_type"])
+        )
 
 
 class AdminCurriculumView(generics.ListAPIView):

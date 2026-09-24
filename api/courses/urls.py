@@ -12,6 +12,11 @@ urlpatterns = [
         name="admin-course-detail",
     ),
     path(
+        "admin/courses/<uuid:pk>/thumbnail/upload/",
+        views.AdminThumbnailUploadView.as_view(),
+        name="admin-course-thumbnail-upload",
+    ),
+    path(
         "admin/courses/<uuid:pk>/curriculum/",
         views.AdminCurriculumView.as_view(),
         name="admin-course-curriculum",

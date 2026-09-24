@@ -45,7 +45,7 @@ class TestPayload:
             title="Foundations",
             description="Where language sits.",
             price_cents=14900,
-            thumbnail_url="https://example.com/thumb.png",
+            thumbnail_key="thumbnails/abc/thumb.png",
         )
         reviewer = User.objects.create_user(email="reviewer@example.com")
         Review.objects.create(user=reviewer, course=course, rating=4, status=ReviewStatus.PUBLISHED)

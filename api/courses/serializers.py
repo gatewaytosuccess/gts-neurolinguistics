@@ -2,12 +2,23 @@ from django.utils.text import slugify
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+from common import storage
+
+from . import thumbnails
 from .models import Course, Lesson, Module
+
+
+class PublicUrlField(serializers.ReadOnlyField):
+    """An object key as its CloudFront URL; blank stays blank."""
+
+    def to_representation(self, value):
+        return storage.public_url(value)
 
 
 class CourseListSerializer(serializers.ModelSerializer):
     """Expects a queryset annotated by ``Course.objects.with_ratings()``."""
 
+    thumbnail_url = PublicUrlField(source="thumbnail_key")
     rating_average = serializers.FloatField(allow_null=True, read_only=True)
     rating_count = serializers.IntegerField(read_only=True)
 
@@ -71,6 +82,10 @@ class AdminCourseSerializer(serializers.ModelSerializer):
 
     A blank or missing ``slug`` on create, or a blank one on a draft's update, is
     generated from the title. ``status`` is read-only: a create is always a draft.
+
+    ``thumbnail_key`` can only be set on an update, to a blank (removing it) or an
+    uploaded object under the course's prefix. Deleting the replaced object is left
+    to the caller.
     """
 
     slug = serializers.SlugField(
@@ -83,6 +98,7 @@ class AdminCourseSerializer(serializers.ModelSerializer):
             )
         ],
     )
+    thumbnail_url = PublicUrlField(source="thumbnail_key")
 
     class Meta:
         model = Course
@@ -92,6 +108,8 @@ class AdminCourseSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "price_cents",
+            "thumbnail_key",
+            "thumbnail_url",
             "status",
             "created_at",
             "updated_at",
@@ -103,6 +121,20 @@ class AdminCourseSerializer(serializers.ModelSerializer):
                 "error_messages": {"min_value": "The price must be greater than 0."},
             },
         }
+
+    def validate_thumbnail_key(self, value):
+        course = self.instance
+        if not value:
+            return value
+        if course is None:
+            raise serializers.ValidationError("Add a thumbnail once the course is created.")
+        if value == course.thumbnail_key:
+            return value
+        if not value.startswith(thumbnails.key_prefix(course)):
+            raise serializers.ValidationError("This isn't an upload for this course.")
+        if not thumbnails.exists(value):
+            raise serializers.ValidationError("The upload didn't finish. Upload the file again.")
+        return value
 
     def validate(self, attrs):
         course = self.instance
@@ -117,12 +149,23 @@ class AdminCourseSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"description": "A published course needs a description."}
                 )
+            if "thumbnail_key" in attrs and not attrs["thumbnail_key"]:
+                raise serializers.ValidationError(
+                    {"thumbnail_key": "A published course needs a thumbnail."}
+                )
 
         if not attrs.get("slug") and (course is None or "slug" in attrs):
             title = attrs["title"] if "title" in attrs else course.title
             attrs["slug"] = unique_slug(title, exclude=course)
 
         return attrs
+
+
+class ThumbnailUploadSerializer(serializers.Serializer):
+    content_type = serializers.ChoiceField(
+        choices=list(thumbnails.TYPES),
+        error_messages={"invalid_choice": "Choose a JPEG, PNG or WebP image."},
+    )
 
 
 class AdminCurriculumLessonSerializer(serializers.ModelSerializer):

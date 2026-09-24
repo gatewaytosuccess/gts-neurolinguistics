@@ -132,6 +132,8 @@ class TestCreate:
             "slug",
             "description",
             "price_cents",
+            "thumbnail_key",
+            "thumbnail_url",
             "status",
             "created_at",
             "updated_at",

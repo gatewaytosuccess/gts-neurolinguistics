@@ -59,7 +59,7 @@ Account status splits along one axis: who can clear it.
 | slug | string | UK, not null | |
 | description | text | | |
 | price_cents | int | not null | Catalog price (single currency) |
-| thumbnail_url | string | nullable | |
+| thumbnail_key | string | | Thumbnail bucket object key |
 | status | enum | not null, default `draft` | `draft \| published` |
 | created_at | timestamp | not null | |
 | updated_at | timestamp | not null | |

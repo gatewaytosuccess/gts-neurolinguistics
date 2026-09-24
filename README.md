@@ -48,7 +48,100 @@ Point `DATABASE_URL` at it, then:
 .venv/bin/python manage.py createsuperuser
 ```
 
-### 4. Run
+### 4. Storage (S3 and CloudFront)
+
+Needed for uploads: thumbnails now, lesson video and slides next. Dev uses
+real buckets of its own, never production's. Do this in the AWS console, all
+in one region.
+
+**Buckets.** Create two buckets, such as `gts-neuro-dev-private` (lesson
+video and slides) and `gts-neuro-dev-thumbnails`. Leave *Block all public
+access* on and ACLs disabled on both.
+
+**CORS.** The browser uploads straight to S3, so on each bucket, under
+*Permissions → Cross-origin resource sharing*:
+
+```json
+[
+  {
+    "AllowedOrigins": ["http://localhost:3000"],
+    "AllowedMethods": ["POST"],
+    "AllowedHeaders": ["*"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+**CloudFront.** Create a distribution whose origin is the thumbnail bucket
+(the bucket itself, not a website endpoint). Under *Origin access*, choose
+*Origin access control settings* and create a control that signs requests.
+Redirect HTTP to HTTPS, and keep the default *CachingOptimized* policy.
+
+**Thumbnail bucket policy.** Only that distribution may read the bucket.
+CloudFront offers this policy after creating the distribution; under the
+bucket's *Permissions → Bucket policy* it reads:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "cloudfront.amazonaws.com" },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::gts-neuro-dev-thumbnails/*",
+      "Condition": {
+        "StringEquals": {
+          "AWS:SourceArn": "arn:aws:cloudfront::<account-id>:distribution/<distribution-id>"
+        }
+      }
+    }
+  ]
+}
+```
+
+The private bucket gets no policy: only presigned URLs reach it.
+
+**IAM user.** Create a user with no console access, and give it an inline
+policy limited to the two buckets:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::gts-neuro-dev-private/*",
+        "arn:aws:s3:::gts-neuro-dev-thumbnails/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": [
+        "arn:aws:s3:::gts-neuro-dev-private",
+        "arn:aws:s3:::gts-neuro-dev-thumbnails"
+      ]
+    }
+  ]
+}
+```
+
+`s3:ListBucket` makes S3 answer 404, not 403, for a missing object, which is
+how the API tells an unfinished upload from a permissions problem. Create an
+access key for the user (*Application running outside AWS*).
+
+**`.env`.** Fill in `AWS_S3_REGION_NAME`, `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, `AWS_PRIVATE_BUCKET_NAME`,
+`AWS_THUMBNAIL_BUCKET_NAME`, and `CLOUDFRONT_DOMAIN` (the distribution's
+domain, such as `d1234abcd.cloudfront.net`, with no `https://`).
+
+To check it, upload a thumbnail on a draft course at
+`/admin/courses/<id>`: it should appear on the page.
+
+### 5. Run
 
 ```bash
 .venv/bin/python manage.py runserver    # http://127.0.0.1:8000

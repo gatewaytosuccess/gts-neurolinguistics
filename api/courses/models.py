@@ -56,7 +56,7 @@ class Course(BaseModel):
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(blank=True)
     price_cents = models.PositiveIntegerField()
-    thumbnail_url = models.URLField(max_length=500, blank=True)
+    thumbnail_key = models.CharField(max_length=500, blank=True, help_text="Thumbnail bucket key.")
     status = models.CharField(
         max_length=20, choices=CourseStatus.choices, default=CourseStatus.DRAFT
     )
