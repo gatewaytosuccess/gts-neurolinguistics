@@ -167,7 +167,7 @@ function CourseCard({
       className="group flex h-full flex-col rounded-lg bg-paper-raised p-lg"
     >
       {course.thumbnail_url ? (
-        // Thumbnails are admin-pasted URLs on any host, so next/image can't allowlist them.
+        // CloudFront's domain is a Django setting, so next/image has no host to allowlist.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={course.thumbnail_url}

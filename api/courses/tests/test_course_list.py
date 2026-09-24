@@ -162,13 +162,14 @@ class TestSort:
 
 
 class TestPayload:
-    def test_returns_the_catalog_fields(self, client):
+    def test_returns_the_catalog_fields(self, client, settings):
+        settings.CLOUDFRONT_DOMAIN = "cdn.example.com"
         make_course(
             "foundations",
             title="Foundations",
             description="Where language sits.",
             price_cents=14900,
-            thumbnail_url="https://example.com/thumb.png",
+            thumbnail_key="thumbnails/abc/thumb.png",
         )
 
         (item,) = list_courses(client)["results"]
@@ -184,7 +185,14 @@ class TestPayload:
             "rating_count",
         }
         assert item["price_cents"] == 14900
-        assert item["thumbnail_url"] == "https://example.com/thumb.png"
+        assert item["thumbnail_url"] == "https://cdn.example.com/thumbnails/abc/thumb.png"
+
+    def test_a_course_without_a_thumbnail_has_a_blank_url(self, client):
+        make_course("foundations")
+
+        (item,) = list_courses(client)["results"]
+
+        assert item["thumbnail_url"] == ""
 
 
 class TestRatings:

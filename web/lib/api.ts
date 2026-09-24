@@ -63,6 +63,10 @@ export type AdminCourse = {
   slug: string;
   description: string;
   price_cents: number;
+  /** Blank when the course has no thumbnail. */
+  thumbnail_key: string;
+  /** Blank when the course has no thumbnail. */
+  thumbnail_url: string;
   status: CourseStatus;
   created_at: string;
   updated_at: string;
@@ -114,6 +118,16 @@ export type AdminLessonInput = Pick<
   AdminLesson,
   "title" | "body" | "is_preview" | "duration_seconds"
 >;
+
+/**
+ * An S3 presigned POST. The browser sends `fields`, then the file last, as
+ * multipart form data to `url`; `key` is where the object lands.
+ */
+export type PresignedUpload = {
+  url: string;
+  fields: Record<string, string>;
+  key: string;
+};
 
 /** DRF's 400 body: messages per field, plus `non_field_errors`. */
 export type FieldErrors = Record<string, string[]>;
@@ -303,6 +317,39 @@ export async function updateAdminCourse(
       method: "PATCH",
       body: JSON.stringify(input),
     },
+  );
+}
+
+/**
+ * A presigned POST for a new thumbnail. The course is unchanged until
+ * `setAdminCourseThumbnail` saves the key. Throws `ApiError` with status 400
+ * and a `FieldErrors` body for a type other than JPEG, PNG or WebP, 404 for an
+ * unknown id, 403 for anyone but an admin, and on any other failure.
+ */
+export async function requestAdminThumbnailUpload(
+  courseId: string,
+  contentType: string,
+): Promise<PresignedUpload> {
+  return apiFetch<PresignedUpload>(
+    `/api/admin/courses/${encodeURIComponent(courseId)}/thumbnail/upload/`,
+    { method: "POST", body: JSON.stringify({ content_type: contentType }) },
+  );
+}
+
+/**
+ * A blank `key` removes the thumbnail. The replaced object is deleted from
+ * storage. Throws `ApiError` with status 400 and a `FieldErrors` body for a
+ * key that isn't an upload for this course, an upload that never finished,
+ * or removing a published course's thumbnail; 404 for an unknown id, 403 for
+ * anyone but an admin, and on any other failure.
+ */
+export async function setAdminCourseThumbnail(
+  courseId: string,
+  key: string,
+): Promise<AdminCourse> {
+  return apiFetch<AdminCourse>(
+    `/api/admin/courses/${encodeURIComponent(courseId)}/`,
+    { method: "PATCH", body: JSON.stringify({ thumbnail_key: key }) },
   );
 }
 

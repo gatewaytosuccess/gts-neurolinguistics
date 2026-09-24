@@ -11,10 +11,15 @@ import {
 
 import { requireAdmin } from "../../_lib/require-admin";
 import { CourseDetailsForm } from "../_components/course-details-form";
+import { CourseThumbnail } from "../_components/course-thumbnail";
 import { CurriculumOutline } from "../_components/curriculum-outline";
 import { StatusBadge } from "../_components/status-badge";
 import { updateCourse } from "../_lib/actions";
 import { courseDetailsValues } from "../_lib/course-details";
+import {
+  requestThumbnailUpload,
+  saveThumbnail,
+} from "../_lib/thumbnail-actions";
 
 export const metadata: Metadata = {
   title: "Course · Admin",
@@ -74,6 +79,19 @@ export default async function AdminCoursePage({
           initialState={{ values: courseDetailsValues(course), errors: {} }}
           slugLocked={course.status === "published"}
           submitLabel="Save changes"
+        />
+      </section>
+
+      <section aria-labelledby="thumbnail-heading" className="mt-3xl">
+        <h2 id="thumbnail-heading" className="type-headline-sm">
+          Thumbnail
+        </h2>
+        <CourseThumbnail
+          url={course.thumbnail_url}
+          removable={course.status !== "published"}
+          requestUpload={requestThumbnailUpload.bind(null, course.id)}
+          save={saveThumbnail.bind(null, course.id)}
+          remove={saveThumbnail.bind(null, course.id, "")}
         />
       </section>
 
