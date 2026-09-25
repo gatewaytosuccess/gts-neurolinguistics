@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from botocore.exceptions import ClientError
@@ -36,6 +37,17 @@ class TestPresignUpload:
         upload = storage.presign_upload("gts-thumbnails", "thumbnails/a/b.png", "image/png", 100)
 
         assert ["content-length-range", 1, 100] in policy_conditions(upload)
+
+
+class TestPresignDownload:
+    def test_signs_a_get_for_the_object(self, s3):
+        url = urlparse(storage.presign_download("gts-private", "lessons/a/b c.mp4", 3600))
+
+        assert url.netloc == "gts-private.s3.us-east-2.amazonaws.com"
+        assert url.path == "/lessons/a/b%20c.mp4"
+        query = parse_qs(url.query)
+        assert query["X-Amz-Expires"] == ["3600"]
+        assert "X-Amz-Signature" in query
 
 
 class TestHead:

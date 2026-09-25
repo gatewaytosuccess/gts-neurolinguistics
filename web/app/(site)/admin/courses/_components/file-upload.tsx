@@ -21,10 +21,17 @@ const S3_ERRORS: Record<string, string> = {
 };
 
 function s3ErrorMessage(responseText: string): string {
-  const code = new DOMParser()
-    .parseFromString(responseText, "application/xml")
-    .querySelector("Code")?.textContent;
-  return (code && S3_ERRORS[code]) || "Storage refused the file. Try again.";
+  const error = new DOMParser().parseFromString(
+    responseText,
+    "application/xml",
+  );
+  const code = error.querySelector("Code")?.textContent;
+  if (code && S3_ERRORS[code]) return S3_ERRORS[code];
+  // A failed policy condition is an AccessDenied whose message names the field.
+  if (error.querySelector("Message")?.textContent?.includes("$Content-Type")) {
+    return "This file isn't a type this upload accepts.";
+  }
+  return "Storage refused the file. Try again.";
 }
 
 /** Rejects with a message to show. */
@@ -35,7 +42,8 @@ function postToS3(
 ): Promise<void> {
   const body = new FormData();
   for (const [name, value] of Object.entries(upload.fields)) {
-    body.append(name, value);
+    // The file's own type, so S3's policy refuses a file of the wrong type.
+    body.append(name, name === "Content-Type" ? file.type : value);
   }
   // S3 ignores every field after the file.
   body.append("file", file);
@@ -63,7 +71,7 @@ function postToS3(
 /**
  * Picks a file, uploads it straight to S3 through a presigned POST, then saves
  * its key. The file's MIME type is what `requestUpload` receives and what S3
- * checks.
+ * checks. `onChoose` runs with the file before anything is uploaded.
  */
 export function FileUpload({
   id,
@@ -72,6 +80,7 @@ export function FileUpload({
   hint,
   requestUpload,
   save,
+  onChoose,
 }: {
   id: string;
   buttonLabel: string;
@@ -79,6 +88,7 @@ export function FileUpload({
   hint: string;
   requestUpload: (contentType: string) => Promise<UploadTicket>;
   save: (key: string) => Promise<UploadResult>;
+  onChoose?: (file: File) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
@@ -88,6 +98,7 @@ export function FileUpload({
     phase.kind === "saving";
 
   async function upload(file: File) {
+    onChoose?.(file);
     setPhase({ kind: "preparing" });
     const ticket = await requestUpload(file.type).catch(() => ({
       error: "The server isn't responding, so nothing was uploaded.",

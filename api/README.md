@@ -96,8 +96,12 @@ enrollments: grant those in Django admin.
   `POST /api/admin/modules/<id>/move/` — add, rename, delete and reorder modules; admins only
 - `POST /api/admin/modules/<id>/lessons/`, `DELETE /api/admin/lessons/<id>/`,
   `POST /api/admin/lessons/<id>/move/` — add, delete and reorder lessons, across modules too; admins only
-- `GET`, `PATCH /api/admin/lessons/<id>/` — a lesson's title, body, preview flag and duration,
-  with its module and course; admins only
+- `GET`, `PATCH /api/admin/lessons/<id>/` — a lesson's title, body, preview flag, duration and
+  files, with its module and course; `video_url` and `slides_url` are presigned GETs that expire
+  after an hour; admins only
+- `POST /api/admin/lessons/<id>/uploads/` — a presigned POST for a new `video` (MP4, up to 2 GB)
+  or `slides` (PDF, up to 100 MB), by `kind`; `PATCH` its `video_key` or `slides_key` onto the
+  lesson to save it, or a blank key to remove it; admins only
 - `/admin/` — Django admin (superuser password login; unrelated to Clerk)
 
 Any admin write to a published course, its curriculum or its lessons that would leave it

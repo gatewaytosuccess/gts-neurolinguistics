@@ -4,7 +4,7 @@ from rest_framework.validators import UniqueValidator
 
 from common import storage
 
-from . import thumbnails
+from . import lesson_files, thumbnails
 from .models import Course, Lesson, Module
 
 
@@ -13,6 +13,13 @@ class PublicUrlField(serializers.ReadOnlyField):
 
     def to_representation(self, value):
         return storage.public_url(value)
+
+
+class PresignedDownloadField(serializers.ReadOnlyField):
+    """A private bucket key as a presigned GET URL; blank stays blank. Admin serializers only."""
+
+    def to_representation(self, value):
+        return lesson_files.download_url(value)
 
 
 class CourseListSerializer(serializers.ModelSerializer):
@@ -213,13 +220,19 @@ class LessonCourseSerializer(serializers.ModelSerializer):
 
 
 class AdminLessonDetailSerializer(serializers.ModelSerializer):
-    """Everything about a lesson apart from its files, with its module and course.
+    """Everything about a lesson, with its module and course.
 
-    ``duration_seconds`` is positive or null.
+    ``duration_seconds`` is positive or null. ``video_key`` and ``slides_key`` can
+    be set to a blank (removing the file) or an uploaded object of that kind under
+    the lesson's prefix. Deleting the replaced object is left to the caller, as is
+    keeping a published course publishable. ``video_url`` and ``slides_url`` expire
+    after an hour.
     """
 
     module = LessonModuleSerializer(read_only=True)
     course = LessonCourseSerializer(source="module.course", read_only=True)
+    video_url = PresignedDownloadField(source="video_key")
+    slides_url = PresignedDownloadField(source="slides_key")
 
     class Meta:
         model = Lesson
@@ -229,6 +242,10 @@ class AdminLessonDetailSerializer(serializers.ModelSerializer):
             "body",
             "is_preview",
             "duration_seconds",
+            "video_key",
+            "video_url",
+            "slides_key",
+            "slides_url",
             "position",
             "is_empty",
             "module",
@@ -241,6 +258,29 @@ class AdminLessonDetailSerializer(serializers.ModelSerializer):
                 "error_messages": {"min_value": "The duration must be greater than 0."},
             },
         }
+
+    def _validate_file_key(self, kind, value):
+        lesson = self.instance
+        if not value or value == getattr(lesson, lesson_files.KINDS[kind].field):
+            return value
+        if not lesson_files.is_upload_for(lesson, kind, value):
+            raise serializers.ValidationError(f"This isn't a {kind} upload for this lesson.")
+        if not lesson_files.exists(value):
+            raise serializers.ValidationError("The upload didn't finish. Upload the file again.")
+        return value
+
+    def validate_video_key(self, value):
+        return self._validate_file_key("video", value)
+
+    def validate_slides_key(self, value):
+        return self._validate_file_key("slides", value)
+
+
+class LessonUploadSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(
+        choices=list(lesson_files.KINDS),
+        error_messages={"invalid_choice": "Choose video or slides."},
+    )
 
 
 class MoveModuleSerializer(serializers.Serializer):

@@ -5,6 +5,7 @@ run one after another instead of colliding on a position. An edit that leaves a
 published course with publish problems raises ``Unpublishable`` and rolls back.
 """
 
+from . import lesson_files
 from .models import Lesson, Module
 from .publishing import keeping_publishable
 
@@ -45,9 +46,11 @@ def move_module(module, position):
 
 
 def delete_module(module):
-    """Deletes its lessons and their progress too."""
+    """Deletes its lessons and their progress too, then their objects after the commit."""
     with keeping_publishable(module.course_id):
+        keys = lesson_files.keys_of(Lesson.objects.filter(module=module))
         module.delete()
+        lesson_files.delete_after_commit(*keys)
         _renumber(list(Module.objects.filter(course_id=module.course_id).order_by("position")))
 
 
@@ -87,7 +90,9 @@ def move_lesson(lesson, position=None, module=None):
 
 
 def delete_lesson(lesson):
-    """Deletes its progress too."""
+    """Deletes its progress too, then its objects after the commit."""
     with keeping_publishable(lesson.module.course_id):
+        keys = lesson_files.keys_of(Lesson.objects.filter(pk=lesson.pk))
         lesson.delete()
+        lesson_files.delete_after_commit(*keys)
         _renumber(list(Lesson.objects.filter(module_id=lesson.module_id).order_by("position")))

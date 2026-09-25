@@ -1,10 +1,13 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import { useActionState, useRef, useState, type ReactNode } from "react";
 
 import { Markdown } from "@/components/markdown";
+import type { LessonFileKind } from "@/lib/api";
 
-import type { LessonEditorState } from "../_lib/lesson-editor";
+import { splitDuration, type LessonEditorState } from "../_lib/lesson-editor";
+import type { UploadResult, UploadTicket } from "../_lib/uploads";
+import { LessonFile, readVideoDuration } from "./lesson-file";
 import { PublishProblems } from "./publish-problems";
 
 const fieldClassName =
@@ -22,24 +25,49 @@ function borderClassName(errors?: string[]) {
 export function LessonEditorForm({
   action,
   initialState,
+  files,
 }: {
   action: (
     state: LessonEditorState,
     formData: FormData,
   ) => Promise<LessonEditorState>;
   initialState: LessonEditorState;
+  files: {
+    /** Blank when the lesson has no video. */
+    videoUrl: string;
+    /** Blank when the lesson has no slides. */
+    slidesUrl: string;
+    requestUpload: (kind: LessonFileKind) => Promise<UploadTicket>;
+    save: (
+      kind: LessonFileKind,
+      key: string,
+      durationSeconds?: number | null,
+    ) => Promise<UploadResult>;
+  };
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const { values, errors } = state;
 
-  // Controlled so the preview can read it; resynced when a save returns new values.
+  // Controlled so the preview and the video upload can reach them; resynced
+  // when a save returns new values.
   const [body, setBody] = useState(values.body);
-  const [bodyState, setBodyState] = useState(state);
-  if (bodyState !== state) {
-    setBodyState(state);
+  const [duration, setDuration] = useState({
+    minutes: values.minutes,
+    seconds: values.seconds,
+  });
+  const [syncedState, setSyncedState] = useState(state);
+  if (syncedState !== state) {
+    setSyncedState(state);
     setBody(state.values.body);
+    setDuration({
+      minutes: state.values.minutes,
+      seconds: state.values.seconds,
+    });
   }
   const [previewing, setPreviewing] = useState(false);
+
+  // Read from the chosen video, then saved with its key.
+  const videoDuration = useRef<Promise<number | null>>(Promise.resolve(null));
 
   return (
     // Fields read their defaults from `state`: React resets the form after every submission.
@@ -92,13 +120,15 @@ export function LessonEditorForm({
             <DurationPart
               name="minutes"
               label="Minutes"
-              defaultValue={values.minutes}
+              value={duration.minutes}
+              onChange={(minutes) => setDuration({ ...duration, minutes })}
               errors={errors.duration}
             />
             <DurationPart
               name="seconds"
               label="Seconds"
-              defaultValue={values.seconds}
+              value={duration.seconds}
+              onChange={(seconds) => setDuration({ ...duration, seconds })}
               errors={errors.duration}
             />
           </div>
@@ -106,7 +136,8 @@ export function LessonEditorForm({
             id="lesson-duration-hint"
             className="type-caption mt-xs text-meta-text"
           >
-            Leave both blank if you don&rsquo;t know it yet.
+            Filled in when a video is uploaded. Leave both blank if you
+            don&rsquo;t know it yet.
           </p>
           <FieldErrors id="lesson-duration-error" errors={errors.duration} />
         </fieldset>
@@ -134,13 +165,33 @@ export function LessonEditorForm({
         </div>
       </section>
 
-      <PlaceholderSection id="lesson-video-heading" title="Video">
-        Video uploads aren&rsquo;t available yet.
-      </PlaceholderSection>
+      <LessonFile
+        kind="video"
+        url={files.videoUrl}
+        requestUpload={() => files.requestUpload("video")}
+        onChoose={(file) => {
+          videoDuration.current = readVideoDuration(file).then((seconds) => {
+            if (seconds !== null) setDuration(splitDuration(seconds));
+            return seconds;
+          });
+        }}
+        save={async (key) =>
+          files.save("video", key, (await videoDuration.current) ?? undefined)
+        }
+        remove={async () => {
+          const result = await files.save("video", "", null);
+          if (!result.error) setDuration(splitDuration(null));
+          return result;
+        }}
+      />
 
-      <PlaceholderSection id="lesson-slides-heading" title="Slides">
-        Slide uploads aren&rsquo;t available yet.
-      </PlaceholderSection>
+      <LessonFile
+        kind="slides"
+        url={files.slidesUrl}
+        requestUpload={() => files.requestUpload("slides")}
+        save={(key) => files.save("slides", key)}
+        remove={() => files.save("slides", "")}
+      />
 
       <section aria-labelledby="lesson-body-heading" className="measure">
         <div className="flex flex-wrap items-end justify-between gap-md">
@@ -217,12 +268,14 @@ export function LessonEditorForm({
 function DurationPart({
   name,
   label,
-  defaultValue,
+  value,
+  onChange,
   errors,
 }: {
   name: "minutes" | "seconds";
   label: string;
-  defaultValue: string;
+  value: string;
+  onChange: (value: string) => void;
   errors?: string[];
 }) {
   const id = `lesson-duration-${name}`;
@@ -236,7 +289,8 @@ function DurationPart({
         name={name}
         type="text"
         inputMode="numeric"
-        defaultValue={defaultValue}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         {...(errors && { "aria-invalid": true })}
         className={`${fieldClassName} type-data-md ${borderClassName(errors)}`}
       />
@@ -266,27 +320,6 @@ function ToggleButton({
     >
       {children}
     </button>
-  );
-}
-
-function PlaceholderSection({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section aria-labelledby={id} className="measure">
-      <h2 id={id} className="type-headline-sm">
-        {title}
-      </h2>
-      <p className="type-body-sm mt-md rounded-sm border border-dashed border-rule px-sm py-md text-meta-text">
-        {children}
-      </p>
-    </section>
   );
 }
 

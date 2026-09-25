@@ -50,7 +50,7 @@ Point `DATABASE_URL` at it, then:
 
 ### 4. Storage (S3 and CloudFront)
 
-Needed for uploads: thumbnails now, lesson video and slides next. Dev uses
+Needed for uploads: thumbnails, lesson video and slides. Dev uses
 real buckets of its own, never production's. Do this in the AWS console, all
 in one region.
 

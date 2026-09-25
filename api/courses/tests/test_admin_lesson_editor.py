@@ -91,22 +91,15 @@ class TestRetrieve:
             "body": "# Heading",
             "is_preview": True,
             "duration_seconds": 754,
+            "video_key": "",
+            "video_url": "",
+            "slides_key": "",
+            "slides_url": "",
             "position": 2,
             "is_empty": False,
             "module": {"id": str(module.pk), "title": "Anatomy", "position": 2},
             "course": {"id": str(course.pk), "title": "Foundations", "status": "draft"},
         }
-
-    def test_leaves_out_the_file_keys(self, client, admin, lesson):
-        lesson.video_key = "lessons/video.mp4"
-        lesson.slides_key = "lessons/slides.pdf"
-        lesson.save()
-
-        body = get_lesson(client, lesson).json()
-
-        assert "video_key" not in body
-        assert "slides_key" not in body
-        assert body["is_empty"] is False
 
     def test_an_unknown_lesson_is_not_found(self, client, admin):
         assert get_lesson(client, uuid.uuid4()).status_code == 404
@@ -170,13 +163,6 @@ class TestUpdate:
 
         assert response.status_code == 200
         assert response.json()[field] == before
-
-    def test_ignores_the_file_keys(self, client, admin, lesson):
-        patch_lesson(client, lesson, video_key="lessons/video.mp4", slides_key="x.pdf")
-
-        lesson.refresh_from_db()
-        assert lesson.video_key == ""
-        assert lesson.slides_key == ""
 
     def test_ignores_a_module_in_the_body(self, client, admin, lesson):
         other = Module.objects.get(title="Welcome")
