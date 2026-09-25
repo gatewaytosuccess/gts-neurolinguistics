@@ -6,7 +6,7 @@ import uuid
 import pytest
 from django.urls import reverse
 
-from courses.models import Course, CourseStatus
+from courses.models import Course, CourseStatus, Lesson, Module
 from users.authentication import ClerkAuthentication
 from users.models import Role, User
 
@@ -295,25 +295,31 @@ class TestReplaceAndRemove:
 
 
 class TestPublished:
-    def test_refuses_removing_it(self, client, admin, s3, django_capture_on_commit_callbacks):
+    @pytest.fixture
+    def published(self):
+        """A published course that meets every publish rule."""
         course = make_course("foundations", status=CourseStatus.PUBLISHED)
-        course.thumbnail_key = key_for(course)
+        course.thumbnail_key = key_for(course, "old.png")
         course.save()
+        module = Module.objects.create(course=course, title="Welcome", position=1)
+        Lesson.objects.create(module=module, title="Hello", position=1, body="Hi.")
+        return course
 
+    def test_refuses_removing_it(
+        self, client, admin, s3, published, django_capture_on_commit_callbacks
+    ):
         with django_capture_on_commit_callbacks(execute=True) as callbacks:
-            response = patch_course(client, course, thumbnail_key="")
+            response = patch_course(client, published, thumbnail_key="")
 
         assert response.status_code == 400
-        assert response.json()["thumbnail_key"] == ["A published course needs a thumbnail."]
+        assert response.json() == {"problems": ["The course has no thumbnail."]}
         assert callbacks == []
-        course.refresh_from_db()
-        assert course.thumbnail_key == key_for(course)
+        published.refresh_from_db()
+        assert published.thumbnail_key == key_for(published, "old.png")
 
-    def test_can_replace_it(self, client, admin, s3, django_capture_on_commit_callbacks):
-        course = make_course("foundations", status=CourseStatus.PUBLISHED)
+    def test_can_replace_it(self, client, admin, s3, published, django_capture_on_commit_callbacks):
+        course = published
         old, new = key_for(course, "old.png"), key_for(course, "new.png")
-        course.thumbnail_key = old
-        course.save()
         expect_head(s3, new)
         expect_delete(s3, old)
 

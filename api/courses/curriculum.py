@@ -1,16 +1,12 @@
 """Curriculum edits. Each keeps positions numbered from 1 with no gaps.
 
 Every edit locks the course row first, so concurrent edits to one curriculum
-run one after another instead of colliding on a position.
+run one after another instead of colliding on a position. An edit that leaves a
+published course with publish problems raises ``Unpublishable`` and rolls back.
 """
 
-from django.db import transaction
-
-from .models import Course, Lesson, Module
-
-
-def _lock_course(course_id):
-    Course.objects.select_for_update().only("pk").get(pk=course_id)
+from .models import Lesson, Module
+from .publishing import keeping_publishable
 
 
 def _renumber(items):
@@ -31,42 +27,37 @@ def _move_within(items, item, position):
     items.insert(index, item)
 
 
-@transaction.atomic
 def add_module(course, title):
-    _lock_course(course.pk)
-    return Module.objects.create(
-        course=course, title=title, position=Module.objects.filter(course=course).count() + 1
-    )
+    with keeping_publishable(course.pk):
+        return Module.objects.create(
+            course=course, title=title, position=Module.objects.filter(course=course).count() + 1
+        )
 
 
-@transaction.atomic
 def move_module(module, position):
     """Returns the moved module with its new position."""
-    _lock_course(module.course_id)
-    siblings = list(Module.objects.filter(course_id=module.course_id).order_by("position"))
-    moved = next(sibling for sibling in siblings if sibling.pk == module.pk)
-    _move_within(siblings, moved, position)
-    _renumber(siblings)
-    return moved
+    with keeping_publishable(module.course_id):
+        siblings = list(Module.objects.filter(course_id=module.course_id).order_by("position"))
+        moved = next(sibling for sibling in siblings if sibling.pk == module.pk)
+        _move_within(siblings, moved, position)
+        _renumber(siblings)
+        return moved
 
 
-@transaction.atomic
 def delete_module(module):
     """Deletes its lessons and their progress too."""
-    _lock_course(module.course_id)
-    module.delete()
-    _renumber(list(Module.objects.filter(course_id=module.course_id).order_by("position")))
+    with keeping_publishable(module.course_id):
+        module.delete()
+        _renumber(list(Module.objects.filter(course_id=module.course_id).order_by("position")))
 
 
-@transaction.atomic
 def add_lesson(module, title):
-    _lock_course(module.course_id)
-    return Lesson.objects.create(
-        module=module, title=title, position=Lesson.objects.filter(module=module).count() + 1
-    )
+    with keeping_publishable(module.course_id):
+        return Lesson.objects.create(
+            module=module, title=title, position=Lesson.objects.filter(module=module).count() + 1
+        )
 
 
-@transaction.atomic
 def move_lesson(lesson, position=None, module=None):
     """Returns the moved lesson with its new module and position.
 
@@ -75,29 +66,28 @@ def move_lesson(lesson, position=None, module=None):
     """
     source_id = lesson.module_id
     target_id = module.pk if module else source_id
-    _lock_course(lesson.module.course_id)
 
-    source = list(Lesson.objects.filter(module_id=source_id).order_by("position"))
-    moved = next(sibling for sibling in source if sibling.pk == lesson.pk)
+    with keeping_publishable(lesson.module.course_id):
+        source = list(Lesson.objects.filter(module_id=source_id).order_by("position"))
+        moved = next(sibling for sibling in source if sibling.pk == lesson.pk)
 
-    if target_id == source_id:
-        target = source
-    else:
-        source.remove(moved)
-        _renumber(source)
-        target = list(Lesson.objects.filter(module_id=target_id).order_by("position"))
-        target.append(moved)
-        moved.module_id = target_id
-        moved.save(update_fields=["module", "updated_at"])
+        if target_id == source_id:
+            target = source
+        else:
+            source.remove(moved)
+            _renumber(source)
+            target = list(Lesson.objects.filter(module_id=target_id).order_by("position"))
+            target.append(moved)
+            moved.module_id = target_id
+            moved.save(update_fields=["module", "updated_at"])
 
-    _move_within(target, moved, len(target) if position is None else position)
-    _renumber(target)
-    return moved
+        _move_within(target, moved, len(target) if position is None else position)
+        _renumber(target)
+        return moved
 
 
-@transaction.atomic
 def delete_lesson(lesson):
     """Deletes its progress too."""
-    _lock_course(lesson.module.course_id)
-    lesson.delete()
-    _renumber(list(Lesson.objects.filter(module_id=lesson.module_id).order_by("position")))
+    with keeping_publishable(lesson.module.course_id):
+        lesson.delete()
+        _renumber(list(Lesson.objects.filter(module_id=lesson.module_id).order_by("position")))

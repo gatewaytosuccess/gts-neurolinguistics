@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 
 import {
   ApiError,
+  publishProblems,
   updateAdminLesson,
   type AdminLesson,
   type FieldErrors,
@@ -87,6 +88,8 @@ export async function updateLesson(
       duration_seconds: duration,
     });
   } catch (error) {
+    const problems = publishProblems(error);
+    if (problems) return { values, errors: {}, problems };
     return { values, errors: formErrors(error) };
   }
 

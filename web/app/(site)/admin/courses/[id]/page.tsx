@@ -13,8 +13,15 @@ import { requireAdmin } from "../../_lib/require-admin";
 import { CourseDetailsForm } from "../_components/course-details-form";
 import { CourseThumbnail } from "../_components/course-thumbnail";
 import { CurriculumOutline } from "../_components/curriculum-outline";
+import { DeleteCourse } from "../_components/delete-course";
+import { PublishControl } from "../_components/publish-control";
 import { StatusBadge } from "../_components/status-badge";
-import { updateCourse } from "../_lib/actions";
+import {
+  deleteCourse,
+  publishCourse,
+  unpublishCourse,
+  updateCourse,
+} from "../_lib/actions";
 import { courseDetailsValues } from "../_lib/course-details";
 import {
   requestThumbnailUpload,
@@ -60,6 +67,9 @@ export default async function AdminCoursePage({
     );
   }
 
+  const published = course.status === "published";
+  const unpublish = unpublishCourse.bind(null, course.id);
+
   return (
     <div>
       <p className="type-label-caps text-accent">Admin area</p>
@@ -67,6 +77,11 @@ export default async function AdminCoursePage({
         <h1 className="type-headline-md measure">{course.title}</h1>
         <StatusBadge status={course.status} />
       </div>
+      <PublishControl
+        published={published}
+        publish={publishCourse.bind(null, course.id)}
+        unpublish={unpublish}
+      />
 
       <section aria-labelledby="course-details-heading" className="mt-2xl">
         <h2 id="course-details-heading" className="type-headline-sm">
@@ -77,7 +92,7 @@ export default async function AdminCoursePage({
           key={course.id}
           action={updateCourse.bind(null, course.id)}
           initialState={{ values: courseDetailsValues(course), errors: {} }}
-          slugLocked={course.status === "published"}
+          slugLocked={published}
           submitLabel="Save changes"
         />
       </section>
@@ -88,7 +103,7 @@ export default async function AdminCoursePage({
         </h2>
         <CourseThumbnail
           url={course.thumbnail_url}
-          removable={course.status !== "published"}
+          removable={!published}
           requestUpload={requestThumbnailUpload.bind(null, course.id)}
           save={saveThumbnail.bind(null, course.id)}
           remove={saveThumbnail.bind(null, course.id, "")}
@@ -99,6 +114,13 @@ export default async function AdminCoursePage({
         <h2 id="curriculum-heading" className="type-headline-sm">
           Curriculum
         </h2>
+        {published && (
+          <p className="type-caption measure mt-xs text-meta-text">
+            While the course is published, an edit that leaves a module without
+            lessons or a lesson empty is refused. Unpublish it to add modules or
+            lessons.
+          </p>
+        )}
         {modules === null ? (
           <p className="type-body-sm mt-md rounded-sm bg-warning-subtle px-sm py-sm text-warning">
             The course API is not responding, so the curriculum is unavailable.
@@ -106,6 +128,22 @@ export default async function AdminCoursePage({
         ) : (
           <CurriculumOutline courseId={course.id} modules={modules} />
         )}
+      </section>
+
+      <section aria-labelledby="delete-heading" className="mt-3xl">
+        <h2 id="delete-heading" className="type-headline-sm">
+          Delete
+        </h2>
+        <p className="type-body-sm measure mt-xs text-meta-text">
+          Only a course nobody has enrolled in, bought or reviewed can be
+          deleted. Unpublish any other course to retire it.
+        </p>
+        <DeleteCourse
+          title={course.title}
+          published={published}
+          remove={deleteCourse.bind(null, course.id)}
+          unpublish={unpublish}
+        />
       </section>
     </div>
   );

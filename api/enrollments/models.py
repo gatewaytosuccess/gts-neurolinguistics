@@ -26,7 +26,7 @@ class Enrollment(UUIDModel):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="enrollments"
     )
     course = models.ForeignKey(
-        "courses.Course", on_delete=models.CASCADE, related_name="enrollments"
+        "courses.Course", on_delete=models.PROTECT, related_name="enrollments"
     )
     source = models.CharField(max_length=20, choices=EnrollmentSource.choices)
     order = models.ForeignKey(

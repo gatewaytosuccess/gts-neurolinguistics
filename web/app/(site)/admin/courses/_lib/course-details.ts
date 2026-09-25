@@ -11,6 +11,8 @@ export type CourseDetailsValues = {
 export type CourseDetailsState = {
   values: CourseDetailsValues;
   errors: Partial<Record<keyof CourseDetailsValues | "form", string[]>>;
+  /** The save was refused because the course is published. */
+  problems?: string[];
   saved?: boolean;
 };
 

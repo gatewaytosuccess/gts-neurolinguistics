@@ -84,7 +84,10 @@ enrollments: grant those in Django admin.
 - `POST /api/webhooks/clerk/` — Clerk `user.*` events, Svix-signed
 - `GET /api/admin/courses/` — every course, drafts included; admins only
 - `POST /api/admin/courses/` — create a draft course; admins only
-- `GET`, `PATCH /api/admin/courses/<id>/` — a course's details; admins only
+- `GET`, `PATCH`, `DELETE /api/admin/courses/<id>/` — a course's details; `DELETE` answers 409 for
+  a course anyone has enrolled in, bought or reviewed; admins only
+- `POST /api/admin/courses/<id>/publish/`, `POST /api/admin/courses/<id>/unpublish/` — publish answers
+  400 with `{"problems": [...]}` when the course can't be published; admins only
 - `POST /api/admin/courses/<id>/thumbnail/upload/` — a presigned POST for a new thumbnail
   (JPEG, PNG or WebP, up to 5 MB); `PATCH` its `thumbnail_key` onto the course to save it,
   or a blank key to remove it; admins only
@@ -96,6 +99,9 @@ enrollments: grant those in Django admin.
 - `GET`, `PATCH /api/admin/lessons/<id>/` — a lesson's title, body, preview flag and duration,
   with its module and course; admins only
 - `/admin/` — Django admin (superuser password login; unrelated to Clerk)
+
+Any admin write to a published course, its curriculum or its lessons that would leave it
+unpublishable is rolled back and answers 400 with `{"problems": [...]}`.
 
 ## Tests
 

@@ -1,17 +1,23 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
   ApiError,
+  CATALOG_CACHE_TAG,
   createAdminCourse,
+  deleteAdminCourse,
+  publishAdminCourse,
+  publishProblems,
+  unpublishAdminCourse,
   updateAdminCourse,
   type AdminCourse,
   type FieldErrors,
 } from "@/lib/api";
 
 import { courseDetailsValues, type CourseDetailsState } from "./course-details";
+import type { CourseStatusState } from "./course-status";
 
 const PRICE_FORMAT_ERROR = "Enter a price in dollars, such as 129 or 129.99.";
 
@@ -104,10 +110,66 @@ export async function updateCourse(
       ...(sendsSlug ? { slug: values.slug } : {}),
     });
   } catch (error) {
+    const problems = publishProblems(error);
+    if (problems) return { values, errors: {}, problems };
     return { values, errors: formErrors(error) };
   }
 
   // Re-renders the heading and status badge above the form.
   refresh();
   return { values: courseDetailsValues(course), errors: {}, saved: true };
+}
+
+function statusErrorMessage(
+  error: unknown,
+  verb: "publish" | "unpublish" | "delete",
+): string {
+  if (!(error instanceof ApiError)) {
+    return "The course API is not responding, so nothing changed.";
+  }
+  if (error.status === 401 || error.status === 403) {
+    return "You no longer have access to the admin area.";
+  }
+  if (error.status === 404) {
+    return "This course no longer exists.";
+  }
+  return `The course API couldn't ${verb} this course. Try again.`;
+}
+
+export async function publishCourse(id: string): Promise<CourseStatusState> {
+  try {
+    await publishAdminCourse(id);
+  } catch (error) {
+    const problems = publishProblems(error);
+    return problems
+      ? { problems }
+      : { error: statusErrorMessage(error, "publish") };
+  }
+  updateTag(CATALOG_CACHE_TAG);
+  refresh();
+  return {};
+}
+
+export async function unpublishCourse(id: string): Promise<CourseStatusState> {
+  try {
+    await unpublishAdminCourse(id);
+  } catch (error) {
+    return { error: statusErrorMessage(error, "unpublish") };
+  }
+  updateTag(CATALOG_CACHE_TAG);
+  refresh();
+  return {};
+}
+
+export async function deleteCourse(id: string): Promise<CourseStatusState> {
+  try {
+    await deleteAdminCourse(id);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409) {
+      return { hasHistory: true };
+    }
+    return { error: statusErrorMessage(error, "delete") };
+  }
+  updateTag(CATALOG_CACHE_TAG);
+  redirect("/admin/courses");
 }
