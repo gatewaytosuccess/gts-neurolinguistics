@@ -99,7 +99,6 @@ export type CurriculumModule = {
   lessons: CurriculumLesson[];
 };
 
-/** Everything about a lesson apart from its files. */
 export type AdminLesson = {
   id: string;
   title: string;
@@ -108,6 +107,14 @@ export type AdminLesson = {
   is_preview: boolean;
   /** Positive, or `null` when unknown. */
   duration_seconds: number | null;
+  /** Blank when the lesson has no video. */
+  video_key: string;
+  /** Presigned, expiring after an hour; blank when the lesson has no video. */
+  video_url: string;
+  /** Blank when the lesson has no slides. */
+  slides_key: string;
+  /** Presigned, expiring after an hour; blank when the lesson has no slides. */
+  slides_url: string;
   position: number;
   is_empty: boolean;
   module: { id: string; title: string; position: number };
@@ -116,8 +123,15 @@ export type AdminLesson = {
 
 export type AdminLessonInput = Pick<
   AdminLesson,
-  "title" | "body" | "is_preview" | "duration_seconds"
+  | "title"
+  | "body"
+  | "is_preview"
+  | "duration_seconds"
+  | "video_key"
+  | "slides_key"
 >;
+
+export type LessonFileKind = "video" | "slides";
 
 /**
  * An S3 presigned POST. The browser sends `fields`, then the file last, as
@@ -507,10 +521,13 @@ export async function fetchAdminLesson(id: string): Promise<AdminLesson> {
 }
 
 /**
- * Only the fields given change. Throws `ApiError` with status 400 and a
- * `FieldErrors` body for invalid input or a `publishProblems` body for a
- * change a published course can't take, 404 for an unknown id, 403 for anyone
- * but an admin, and on any other failure.
+ * Only the fields given change. A blank `video_key` or `slides_key` removes
+ * that file, and a replaced or removed file is deleted from storage. Throws
+ * `ApiError` with status 400 and a `FieldErrors` body for invalid input
+ * (including a key that isn't an upload of that kind for this lesson, or an
+ * upload that never finished) or a `publishProblems` body for a change a
+ * published course can't take, 404 for an unknown id, 403 for anyone but an
+ * admin, and on any other failure.
  */
 export async function updateAdminLesson(
   id: string,
@@ -522,5 +539,21 @@ export async function updateAdminLesson(
       method: "PATCH",
       body: JSON.stringify(input),
     },
+  );
+}
+
+/**
+ * A presigned POST for a new video (MP4, up to 2 GB) or slides (PDF, up to
+ * 100 MB). The lesson is unchanged until `updateAdminLesson` saves the key.
+ * Throws `ApiError` with status 404 for an unknown id, 403 for anyone but an
+ * admin, and on any other failure.
+ */
+export async function requestAdminLessonUpload(
+  lessonId: string,
+  kind: LessonFileKind,
+): Promise<PresignedUpload> {
+  return apiFetch<PresignedUpload>(
+    `/api/admin/lessons/${encodeURIComponent(lessonId)}/uploads/`,
+    { method: "POST", body: JSON.stringify({ kind }) },
   );
 }

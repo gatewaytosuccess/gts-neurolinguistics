@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from users.permissions import IsAdmin
 
-from . import curriculum, publishing, thumbnails
+from . import curriculum, lesson_files, publishing, thumbnails
 from .models import Course, CourseStatus, Lesson, Module
 from .serializers import (
     AdminCourseListSerializer,
@@ -19,6 +19,7 @@ from .serializers import (
     AdminLessonSerializer,
     AdminModuleSerializer,
     CourseListSerializer,
+    LessonUploadSerializer,
     MoveLessonSerializer,
     MoveModuleSerializer,
     ThumbnailUploadSerializer,
@@ -115,7 +116,7 @@ class AdminCourseDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     A replaced or removed thumbnail's object is deleted after the change commits.
     DELETE answers 409 for a course with history, and otherwise deletes its
-    curriculum and thumbnail object too.
+    curriculum, its lessons' objects and its thumbnail object too.
     """
 
     queryset = Course.objects.all()
@@ -147,7 +148,9 @@ class AdminCourseDetailView(generics.RetrieveUpdateDestroyAPIView):
                     },
                     status=status.HTTP_409_CONFLICT,
                 )
+            lesson_keys = lesson_files.keys_of(Lesson.objects.filter(module__course=course))
             course.delete()
+            lesson_files.delete_after_commit(*lesson_keys)
             if course.thumbnail_key:
                 thumbnails.delete_after_commit(course.thumbnail_key)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -227,7 +230,7 @@ class AdminModuleCreateView(APIView):
 
 
 class AdminModuleDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
-    """PATCH renames; DELETE also deletes its lessons and their progress."""
+    """PATCH renames; DELETE also deletes its lessons, their progress and their objects."""
 
     queryset = Module.objects.all()
     serializer_class = AdminModuleSerializer
@@ -267,7 +270,11 @@ class AdminLessonCreateView(APIView):
 
 
 class AdminLessonDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Updates are PATCH only. DELETE also deletes the lesson's progress."""
+    """Updates are PATCH only. DELETE also deletes the lesson's progress.
+
+    A replaced or removed video or slides object is deleted after the change
+    commits, as are a deleted lesson's objects.
+    """
 
     queryset = Lesson.objects.select_related("module__course")
     serializer_class = AdminLessonDetailSerializer
@@ -275,11 +282,31 @@ class AdminLessonDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete", "head", "options"]
 
     def perform_update(self, serializer):
+        fields = [kind.field for kind in lesson_files.KINDS.values()]
+        old_keys = {field: getattr(serializer.instance, field) for field in fields}
         with publishing.keeping_publishable(serializer.instance.module.course_id):
-            serializer.save()
+            lesson = serializer.save()
+            lesson_files.delete_after_commit(
+                *(key for field, key in old_keys.items() if key and key != getattr(lesson, field))
+            )
 
     def perform_destroy(self, instance):
         curriculum.delete_lesson(instance)
+
+
+class AdminLessonUploadView(APIView):
+    """A presigned POST for a new video or slides file, with its ``key``.
+
+    The lesson is unchanged until that key is PATCHed onto it.
+    """
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        lesson = get_object_or_404(Lesson, pk=pk)
+        serializer = LessonUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(lesson_files.presign_upload(lesson, serializer.validated_data["kind"]))
 
 
 class AdminLessonMoveView(APIView):

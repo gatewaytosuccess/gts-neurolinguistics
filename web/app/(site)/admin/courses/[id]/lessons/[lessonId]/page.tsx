@@ -7,6 +7,10 @@ import { ApiError, fetchAdminLesson, type AdminLesson } from "@/lib/api";
 import { requireAdmin } from "../../../../_lib/require-admin";
 import { LessonEditorForm } from "../../../_components/lesson-editor-form";
 import { updateLesson } from "../../../_lib/lesson-actions";
+import {
+  requestLessonUpload,
+  saveLessonFile,
+} from "../../../_lib/lesson-file-actions";
 import { lessonEditorValues } from "../../../_lib/lesson-editor";
 
 export const metadata: Metadata = {
@@ -72,6 +76,12 @@ export default async function AdminLessonPage({
         key={lesson.id}
         action={updateLesson.bind(null, lesson.id)}
         initialState={{ values: lessonEditorValues(lesson), errors: {} }}
+        files={{
+          videoUrl: lesson.video_url,
+          slidesUrl: lesson.slides_url,
+          requestUpload: requestLessonUpload.bind(null, lesson.id),
+          save: saveLessonFile.bind(null, lesson.id),
+        }}
       />
     </div>
   );

@@ -51,6 +51,16 @@ def presign_upload(bucket, key, content_type, max_bytes):
     )
 
 
+def presign_download(bucket, key, expires):
+    """A presigned GET URL for one object, valid for ``expires`` seconds.
+
+    Anyone holding the URL can read the object until it expires.
+    """
+    return _client().generate_presigned_url(
+        "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=expires
+    )
+
+
 def head(bucket, key):
     """The object's metadata, or ``None`` if it doesn't exist. Other failures raise."""
     try:

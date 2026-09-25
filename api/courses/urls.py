@@ -49,6 +49,11 @@ urlpatterns = [
     ),
     path("admin/lessons/<uuid:pk>/", views.AdminLessonDetailView.as_view(), name="admin-lesson"),
     path(
+        "admin/lessons/<uuid:pk>/uploads/",
+        views.AdminLessonUploadView.as_view(),
+        name="admin-lesson-uploads",
+    ),
+    path(
         "admin/lessons/<uuid:pk>/move/",
         views.AdminLessonMoveView.as_view(),
         name="admin-lesson-move",

@@ -17,13 +17,21 @@ export type LessonEditorState = {
   saved?: boolean;
 };
 
+/** Both blank for `null`. */
+export function splitDuration(
+  duration: number | null,
+): Pick<LessonEditorValues, "minutes" | "seconds"> {
+  return {
+    minutes: duration === null ? "" : String(Math.floor(duration / 60)),
+    seconds: duration === null ? "" : String(duration % 60),
+  };
+}
+
 export function lessonEditorValues(lesson: AdminLesson): LessonEditorValues {
-  const duration = lesson.duration_seconds;
   return {
     title: lesson.title,
     body: lesson.body,
     isPreview: lesson.is_preview,
-    minutes: duration === null ? "" : String(Math.floor(duration / 60)),
-    seconds: duration === null ? "" : String(duration % 60),
+    ...splitDuration(lesson.duration_seconds),
   };
 }
