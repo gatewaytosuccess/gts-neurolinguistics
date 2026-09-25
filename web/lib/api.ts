@@ -132,6 +132,16 @@ export type PresignedUpload = {
 /** DRF's 400 body: messages per field, plus `non_field_errors`. */
 export type FieldErrors = Record<string, string[]>;
 
+/**
+ * The problems in a 400 refusing to publish a course, or refusing an edit that
+ * would leave a published course unpublishable; `null` for any other error.
+ */
+export function publishProblems(error: unknown): string[] | null {
+  if (!(error instanceof ApiError) || error.status !== 400) return null;
+  const { problems } = (error.body ?? {}) as { problems?: unknown };
+  return Array.isArray(problems) ? problems.map(String) : null;
+}
+
 export type Enrollment = {
   id: string;
   course_id: string;
@@ -140,11 +150,14 @@ export type Enrollment = {
   enrolled_at: string;
 };
 
+/** Tags every public fetch; expire it when a course enters or leaves the catalog. */
+export const CATALOG_CACHE_TAG = "catalog";
+
 // Shared cache: must never carry a token or return per-user data.
 async function publicFetch<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
-    next: { revalidate: 60 },
+    next: { revalidate: 60, tags: [CATALOG_CACHE_TAG] },
   });
 
   if (!response.ok) {
@@ -304,8 +317,9 @@ export async function createAdminCourse(
 /**
  * Only the fields given change. Throws `ApiError` with status 400 and a
  * `FieldErrors` body for invalid input (including a new slug on a published
- * course), 404 for an unknown id, 403 for anyone but an admin, and on any
- * other failure.
+ * course) or a `publishProblems` body for a change a published course can't
+ * take, 404 for an unknown id, 403 for anyone but an admin, and on any other
+ * failure.
  */
 export async function updateAdminCourse(
   id: string,
@@ -318,6 +332,41 @@ export async function updateAdminCourse(
       body: JSON.stringify(input),
     },
   );
+}
+
+/**
+ * Throws `ApiError` with status 400 and a `publishProblems` body when the
+ * course can't be published, 404 for an unknown id, 403 for anyone but an
+ * admin, and on any other failure.
+ */
+export async function publishAdminCourse(id: string): Promise<AdminCourse> {
+  return apiFetch<AdminCourse>(
+    `/api/admin/courses/${encodeURIComponent(id)}/publish/`,
+    { method: "POST" },
+  );
+}
+
+/**
+ * Takes the course out of the catalog; enrolled learners keep it. Throws
+ * `ApiError` with status 404 for an unknown id, 403 for anyone but an admin,
+ * and on any other failure.
+ */
+export async function unpublishAdminCourse(id: string): Promise<AdminCourse> {
+  return apiFetch<AdminCourse>(
+    `/api/admin/courses/${encodeURIComponent(id)}/unpublish/`,
+    { method: "POST" },
+  );
+}
+
+/**
+ * Also deletes its curriculum and thumbnail. Throws `ApiError` with status 409
+ * for a course anyone has enrolled in, bought or reviewed, 404 for an unknown
+ * id, 403 for anyone but an admin, and on any other failure.
+ */
+export async function deleteAdminCourse(id: string): Promise<void> {
+  await apiFetch(`/api/admin/courses/${encodeURIComponent(id)}/`, {
+    method: "DELETE",
+  });
 }
 
 /**
@@ -339,9 +388,9 @@ export async function requestAdminThumbnailUpload(
 /**
  * A blank `key` removes the thumbnail. The replaced object is deleted from
  * storage. Throws `ApiError` with status 400 and a `FieldErrors` body for a
- * key that isn't an upload for this course, an upload that never finished,
- * or removing a published course's thumbnail; 404 for an unknown id, 403 for
- * anyone but an admin, and on any other failure.
+ * key that isn't an upload for this course or an upload that never finished,
+ * or a `publishProblems` body for removing a published course's thumbnail;
+ * 404 for an unknown id, 403 for anyone but an admin, and on any other failure.
  */
 export async function setAdminCourseThumbnail(
   courseId: string,
@@ -368,9 +417,10 @@ export async function fetchAdminCurriculum(
 
 /*
  * The curriculum edits below throw `ApiError` with status 400 and a
- * `FieldErrors` body for invalid input, 404 for an unknown id, 403 for anyone
- * but an admin, and on any other failure. Positions count from 1, and one out
- * of range is clamped.
+ * `FieldErrors` body for invalid input or a `publishProblems` body for an edit
+ * a published course can't take, 404 for an unknown id, 403 for anyone but an
+ * admin, and on any other failure. Positions count from 1, and one out of
+ * range is clamped.
  */
 
 /** Appends the module. */
@@ -458,7 +508,8 @@ export async function fetchAdminLesson(id: string): Promise<AdminLesson> {
 
 /**
  * Only the fields given change. Throws `ApiError` with status 400 and a
- * `FieldErrors` body for invalid input, 404 for an unknown id, 403 for anyone
+ * `FieldErrors` body for invalid input or a `publishProblems` body for a
+ * change a published course can't take, 404 for an unknown id, 403 for anyone
  * but an admin, and on any other failure.
  */
 export async function updateAdminLesson(

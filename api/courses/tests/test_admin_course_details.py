@@ -3,7 +3,7 @@ import uuid
 import pytest
 from django.urls import reverse
 
-from courses.models import Course, CourseStatus
+from courses.models import Course, CourseStatus, Lesson, Module
 from users.authentication import ClerkAuthentication
 from users.models import Role, User
 
@@ -17,6 +17,16 @@ def make_course(slug, status=CourseStatus.DRAFT, **fields):
     fields.setdefault("description", "About the course.")
     fields.setdefault("price_cents", 12900)
     return Course.objects.create(slug=slug, status=status, **fields)
+
+
+def make_published(slug):
+    """A published course that meets every publish rule."""
+    course = make_course(slug, status=CourseStatus.PUBLISHED)
+    course.thumbnail_key = f"thumbnails/{course.pk}/cover.png"
+    course.save()
+    module = Module.objects.create(course=course, title="Welcome", position=1)
+    Lesson.objects.create(module=module, title="Hello", position=1, body="Hi.")
+    return course
 
 
 @pytest.fixture
@@ -294,19 +304,19 @@ class TestDraftSlug:
 
 class TestPublishedSlugLock:
     def test_refuses_a_new_slug(self, client, admin):
-        course = make_course("foundations", status=CourseStatus.PUBLISHED)
+        course = make_published("foundations")
 
         assert "slug" in field_errors(patch_course(client, course, slug="intro"))
         course.refresh_from_db()
         assert course.slug == "foundations"
 
     def test_refuses_a_blank_slug(self, client, admin):
-        course = make_course("foundations", status=CourseStatus.PUBLISHED)
+        course = make_published("foundations")
 
         assert "slug" in field_errors(patch_course(client, course, slug=""))
 
     def test_accepts_the_same_slug(self, client, admin):
-        course = make_course("foundations", status=CourseStatus.PUBLISHED)
+        course = make_published("foundations")
 
         response = patch_course(client, course, slug="foundations", title="New Title")
 
@@ -315,16 +325,18 @@ class TestPublishedSlugLock:
         assert course.title == "New Title"
 
     def test_other_fields_can_change(self, client, admin):
-        course = make_course("foundations", status=CourseStatus.PUBLISHED)
+        course = make_published("foundations")
 
         assert patch_course(client, course, title="New", price_cents=100).status_code == 200
 
 
 class TestPublishedDescription:
     def test_refuses_clearing_it(self, client, admin):
-        course = make_course("foundations", status=CourseStatus.PUBLISHED)
+        course = make_published("foundations")
 
-        assert "description" in field_errors(patch_course(client, course, description="  "))
+        errors = field_errors(patch_course(client, course, description="  "))
+
+        assert errors == {"problems": ["The course has no description."]}
         course.refresh_from_db()
         assert course.description == "About the course."
 

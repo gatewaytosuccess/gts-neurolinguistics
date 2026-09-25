@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
@@ -8,7 +9,7 @@ from rest_framework.views import APIView
 
 from users.permissions import IsAdmin
 
-from . import curriculum, thumbnails
+from . import curriculum, publishing, thumbnails
 from .models import Course, CourseStatus, Lesson, Module
 from .serializers import (
     AdminCourseListSerializer,
@@ -109,22 +110,65 @@ class AdminCourseListView(generics.ListCreateAPIView):
         )
 
 
-class AdminCourseDetailView(generics.RetrieveUpdateAPIView):
+class AdminCourseDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Any course, drafts included. Updates are PATCH only.
 
     A replaced or removed thumbnail's object is deleted after the change commits.
+    DELETE answers 409 for a course with history, and otherwise deletes its
+    curriculum and thumbnail object too.
     """
 
     queryset = Course.objects.all()
     serializer_class = AdminCourseSerializer
     permission_classes = [IsAdmin]
-    http_method_names = ["get", "patch", "head", "options"]
+    http_method_names = ["get", "patch", "delete", "head", "options"]
+
+    def update(self, request, *args, **kwargs):
+        # Locked before the course is read: the save writes every field, so a stale
+        # status would undo an unpublish.
+        with publishing.keeping_publishable(kwargs["pk"]):
+            return super().update(request, *args, **kwargs)
 
     def perform_update(self, serializer):
         old_key = serializer.instance.thumbnail_key
         course = serializer.save()
         if old_key and old_key != course.thumbnail_key:
             thumbnails.delete_after_commit(old_key)
+
+    def destroy(self, request, *args, **kwargs):
+        # Locked so no enrollment, order or review lands between the check and the delete.
+        with transaction.atomic():
+            course = get_object_or_404(Course.objects.select_for_update(), pk=kwargs["pk"])
+            if course.has_history:
+                return Response(
+                    {
+                        "detail": "People have enrolled in, bought or reviewed this course, "
+                        "so it can't be deleted. Unpublish it instead."
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+            course.delete()
+            if course.thumbnail_key:
+                thumbnails.delete_after_commit(course.thumbnail_key)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminCoursePublishView(APIView):
+    """Answers 400 with ``{"problems": [...]}`` for a course that can't be published."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        course = publishing.publish(get_object_or_404(Course, pk=pk))
+        return Response(AdminCourseSerializer(course).data)
+
+
+class AdminCourseUnpublishView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        course = publishing.unpublish(get_object_or_404(Course, pk=pk))
+        return Response(AdminCourseSerializer(course).data)
 
 
 class AdminThumbnailUploadView(APIView):
@@ -190,6 +234,10 @@ class AdminModuleDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
     permission_classes = [IsAdmin]
     http_method_names = ["patch", "delete", "options"]
 
+    def perform_update(self, serializer):
+        with publishing.keeping_publishable(serializer.instance.course_id):
+            serializer.save()
+
     def perform_destroy(self, instance):
         curriculum.delete_module(instance)
 
@@ -225,6 +273,10 @@ class AdminLessonDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AdminLessonDetailSerializer
     permission_classes = [IsAdmin]
     http_method_names = ["get", "patch", "delete", "head", "options"]
+
+    def perform_update(self, serializer):
+        with publishing.keeping_publishable(serializer.instance.module.course_id):
+            serializer.save()
 
     def perform_destroy(self, instance):
         curriculum.delete_lesson(instance)

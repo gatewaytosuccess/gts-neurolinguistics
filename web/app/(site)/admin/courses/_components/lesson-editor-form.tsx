@@ -5,6 +5,7 @@ import { useActionState, useState, type ReactNode } from "react";
 import { Markdown } from "@/components/markdown";
 
 import type { LessonEditorState } from "../_lib/lesson-editor";
+import { PublishProblems } from "./publish-problems";
 
 const fieldClassName =
   "type-body-md mt-xs w-full rounded-sm border bg-paper-raised px-sm py-sm text-accent-strong placeholder:text-meta-text";
@@ -50,6 +51,9 @@ export function LessonEditorForm({
         >
           {errors.form.join(" ")}
         </p>
+      )}
+      {state.problems && (
+        <PublishProblems refused="edit" problems={state.problems} />
       )}
 
       <section

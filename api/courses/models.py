@@ -74,6 +74,11 @@ class Course(BaseModel):
     def is_published(self):
         return self.status == CourseStatus.PUBLISHED
 
+    @property
+    def has_history(self):
+        """Anyone has enrolled in it, revoked enrollments included, bought it or reviewed it."""
+        return self.enrollments.exists() or self.order_items.exists() or self.reviews.exists()
+
 
 class Module(BaseModel):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="modules")

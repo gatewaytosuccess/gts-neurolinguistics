@@ -10,6 +10,7 @@ import {
   deleteAdminModule,
   moveAdminLesson,
   moveAdminModule,
+  publishProblems,
   renameAdminModule,
   type FieldErrors,
 } from "@/lib/api";
@@ -38,7 +39,8 @@ async function edit(change: () => Promise<void>): Promise<OutlineActionState> {
   try {
     await change();
   } catch (error) {
-    return { error: errorMessage(error) };
+    const problems = publishProblems(error);
+    return problems ? { problems } : { error: errorMessage(error) };
   }
   refresh();
   return {};

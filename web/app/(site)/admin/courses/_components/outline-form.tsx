@@ -3,8 +3,9 @@
 import { useActionState, type ReactNode } from "react";
 
 import type { OutlineActionState } from "../_lib/curriculum";
+import { PublishProblems } from "./publish-problems";
 
-/** A curriculum control's form, with its error shown under it. */
+/** A curriculum control's form, with its error or problems shown under it. */
 export function OutlineForm({
   action,
   className = "",
@@ -32,6 +33,9 @@ export function OutlineForm({
         >
           {state.error}
         </p>
+      )}
+      {state.problems && (
+        <PublishProblems refused="edit" problems={state.problems} />
       )}
     </form>
   );

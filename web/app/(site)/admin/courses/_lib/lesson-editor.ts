@@ -12,6 +12,8 @@ export type LessonEditorValues = {
 export type LessonEditorState = {
   values: LessonEditorValues;
   errors: Partial<Record<"title" | "body" | "duration" | "form", string[]>>;
+  /** The save was refused because the course is published. */
+  problems?: string[];
   saved?: boolean;
 };
 

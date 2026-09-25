@@ -6,6 +6,7 @@ import type {
   CourseDetailsState,
   CourseDetailsValues,
 } from "../_lib/course-details";
+import { PublishProblems } from "./publish-problems";
 
 const fieldClassName =
   "type-body-md mt-xs w-full rounded-sm border bg-paper-raised px-sm py-sm text-accent-strong placeholder:text-meta-text read-only:bg-paper-dim";
@@ -37,6 +38,9 @@ export function CourseDetailsForm({
         >
           {errors.form.join(" ")}
         </p>
+      )}
+      {state.problems && (
+        <PublishProblems refused="edit" problems={state.problems} />
       )}
 
       <Field name="title" label="Title" errors={errors.title}>

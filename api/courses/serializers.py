@@ -85,7 +85,7 @@ class AdminCourseSerializer(serializers.ModelSerializer):
 
     ``thumbnail_key`` can only be set on an update, to a blank (removing it) or an
     uploaded object under the course's prefix. Deleting the replaced object is left
-    to the caller.
+    to the caller, as is keeping a published course publishable.
     """
 
     slug = serializers.SlugField(
@@ -139,19 +139,11 @@ class AdminCourseSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         course = self.instance
 
-        # A published course must stay publishable, and its URL is public.
+        # A published course's URL is public.
         if course is not None and course.is_published:
             if "slug" in attrs and attrs["slug"] != course.slug:
                 raise serializers.ValidationError(
                     {"slug": "The slug can't change while the course is published."}
-                )
-            if "description" in attrs and not attrs["description"]:
-                raise serializers.ValidationError(
-                    {"description": "A published course needs a description."}
-                )
-            if "thumbnail_key" in attrs and not attrs["thumbnail_key"]:
-                raise serializers.ValidationError(
-                    {"thumbnail_key": "A published course needs a thumbnail."}
                 )
 
         if not attrs.get("slug") and (course is None or "slug" in attrs):

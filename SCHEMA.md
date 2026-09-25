@@ -64,6 +64,8 @@ Account status splits along one axis: who can clear it.
 | created_at | timestamp | not null | |
 | updated_at | timestamp | not null | |
 
+- A course with any enrollment (revoked ones included), order item or review can't be deleted: those foreign keys are `PROTECT`. It is unpublished instead. See ADR-0004.
+
 ### MODULES
 
 | Column | Type | Key / Constraints | Notes |
