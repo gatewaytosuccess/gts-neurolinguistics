@@ -30,8 +30,9 @@ See `SCHEMA.md` at the root of the project.
 
 `CONTEXT.md` - Project language and terminology. Used and updated after/during grilling sessions (grill-with-docs skill) when vocabulary is solidified.\
 `DESIGN.md` - a design for the frontend visuals.
+`MAPPING.md` - a high level mapping of the web app.
 `README.md` - standard readme, mostly tailored towards dev setup instructions at the moment.
-`SPEC.md` - a high level spec of the project. Free to change if a better alternative to anything in the spec exists.\
+`SPEC.md` - a high level spec of the project. Free to change if a better alternative to anything in the spec exists.\\
 
 ## Code comments
 
