@@ -1,7 +1,10 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import type { CourseReview, Paginated } from "@/lib/api";
 import { formatMonthYear } from "@/lib/format";
+
+import { Stars } from "./stars";
 
 const REVIEWS_PAGE_SIZE = 10;
 
@@ -10,19 +13,24 @@ function reviewsHref(slug: string, page: number) {
   return `/courses/${encodeURIComponent(slug)}${query}#reviews`;
 }
 
-/** `reviews` is `null` when they couldn't be loaded. */
+/**
+ * `reviews` is `null` when they couldn't be loaded. `ownReview` is the
+ * learner's own review or its form, shown above the list.
+ */
 export function Reviews({
   slug,
   ratingAverage,
   ratingCount,
   reviews,
   page,
+  ownReview,
 }: {
   slug: string;
   ratingAverage: number | null;
   ratingCount: number;
   reviews: Paginated<CourseReview> | null;
   page: number;
+  ownReview?: ReactNode;
 }) {
   return (
     <section id="reviews" aria-labelledby="reviews-heading">
@@ -37,14 +45,15 @@ export function Reviews({
           <RatingSummary average={ratingAverage} count={ratingCount} />
         </div>
 
-        <div className="min-w-0 md:col-span-8 lg:col-span-7 lg:col-start-6">
+        <div className="flex min-w-0 flex-col gap-2xl md:col-span-8 lg:col-span-7 lg:col-start-6">
+          {ownReview}
           {reviews === null ? (
             <p className="type-body-sm rounded-sm bg-warning-subtle px-sm py-sm text-warning">
               Reviews are unavailable right now.
             </p>
           ) : (
             reviews.results.length > 0 && (
-              <>
+              <div>
                 <ol className="measure">
                   {reviews.results.map((review) => (
                     <ReviewItem key={review.id} review={review} />
@@ -57,7 +66,7 @@ export function Reviews({
                   hasPrevious={reviews.previous !== null}
                   hasNext={reviews.next !== null}
                 />
-              </>
+              </div>
             )
           )}
         </div>
@@ -108,23 +117,6 @@ function ReviewItem({ review }: { review: CourseReview }) {
         {review.body}
       </p>
     </li>
-  );
-}
-
-function Stars({ rating, label }: { rating: number; label: string }) {
-  return (
-    <span
-      role="img"
-      aria-label={label}
-      className="type-body-md tracking-[0.1em] whitespace-nowrap"
-    >
-      <span aria-hidden className="text-tertiary-strong">
-        {"★".repeat(rating)}
-      </span>
-      <span aria-hidden className="text-border-strong">
-        {"★".repeat(5 - rating)}
-      </span>
-    </span>
   );
 }
 
