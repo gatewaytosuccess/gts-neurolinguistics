@@ -11,6 +11,7 @@ import {
   type CourseSummary,
 } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
+import { markdownExcerpt } from "@/lib/markdown-excerpt";
 
 export const metadata: Metadata = {
   title: "Courses",
@@ -181,7 +182,9 @@ function CourseCard({
       <h2 className="type-headline-sm mt-md group-hover:text-primary">
         {course.title}
       </h2>
-      <p className="type-body-md mt-sm line-clamp-3">{course.description}</p>
+      <p className="type-body-md mt-sm line-clamp-3">
+        {markdownExcerpt(course.description)}
+      </p>
       <Rating average={course.rating_average} count={course.rating_count} />
 
       <div className="mt-auto pt-lg">

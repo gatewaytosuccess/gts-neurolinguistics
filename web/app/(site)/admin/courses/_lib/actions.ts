@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import {
   ApiError,
   CATALOG_CACHE_TAG,
+  courseCacheTag,
   createAdminCourse,
   deleteAdminCourse,
   publishAdminCourse,
@@ -115,6 +116,7 @@ export async function updateCourse(
     return { values, errors: formErrors(error) };
   }
 
+  updateTag(courseCacheTag(course.slug));
   // Re-renders the heading and status badge above the form.
   refresh();
   return { values: courseDetailsValues(course), errors: {}, saved: true };

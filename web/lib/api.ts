@@ -167,11 +167,16 @@ export type Enrollment = {
 /** Tags every public fetch; expire it when a course enters or leaves the catalog. */
 export const CATALOG_CACHE_TAG = "catalog";
 
+/** Tags one course's public data; expire it when an admin edits that course. */
+export function courseCacheTag(slug: string) {
+  return `course:${slug}`;
+}
+
 // Shared cache: must never carry a token or return per-user data.
-async function publicFetch<T>(path: string): Promise<T> {
+async function publicFetch<T>(path: string, tags: string[] = []): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
-    next: { revalidate: 60, tags: [CATALOG_CACHE_TAG] },
+    next: { revalidate: 60, tags: [CATALOG_CACHE_TAG, ...tags] },
   });
 
   if (!response.ok) {
@@ -263,6 +268,7 @@ export async function fetchCourses({
 export async function fetchCourse(slug: string): Promise<CourseSummary> {
   return publicFetch<CourseSummary>(
     `/api/courses/${encodeURIComponent(slug)}/`,
+    [courseCacheTag(slug)],
   );
 }
 

@@ -1,11 +1,13 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 
 import {
   ApiError,
+  courseCacheTag,
   requestAdminThumbnailUpload,
   setAdminCourseThumbnail,
+  type AdminCourse,
   type FieldErrors,
 } from "@/lib/api";
 
@@ -45,11 +47,13 @@ export async function saveThumbnail(
   courseId: string,
   key: string,
 ): Promise<UploadResult> {
+  let course: AdminCourse;
   try {
-    await setAdminCourseThumbnail(courseId, key);
+    course = await setAdminCourseThumbnail(courseId, key);
   } catch (error) {
     return { error: errorMessage(error) };
   }
+  updateTag(courseCacheTag(course.slug));
   refresh();
   return {};
 }
