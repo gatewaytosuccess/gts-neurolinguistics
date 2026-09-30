@@ -39,9 +39,13 @@ _Avoid_: Django admin (a developer tool with its own login, not part of the prod
 **Active**:
 The only status that can sign in and use the API.
 
-**Suspended** / **Banned**:
-Imposed by an admin, and cleared only by an admin. Nothing the person does to their own Clerk identity lifts one — not deleting it, not signing up again.
-_Avoid_: Blocked, disabled, deactivated
+**Suspended**:
+Imposed by an admin, with a reason, and cleared only by an admin. Nothing the person does to their own Clerk identity lifts it — not deleting it, not signing up again. Their enrollments, orders and reviews are untouched. An admin can't be suspended while they hold the role, and no admin can change their own role or status.
+_Avoid_: Banned, blocked, disabled, deactivated
+
+**Reinstate**:
+An admin lifting a suspension. The account goes back to active, or to deleted if the person deleted their Clerk identity while suspended.
+_Avoid_: Unban, unsuspend, restore
 
 **Deleted**:
 The person deleted their own Clerk identity. The platform record survives, because it is what their enrollments and orders point at. Reversible: signing up again with the same email brings the account back as it was.
@@ -77,8 +81,20 @@ Putting a course into the catalog, and taking it back out. Unpublishing is alway
 _Avoid_: Go live, launch, release, archive
 
 **Enrollment**:
-A user's access to a course, however they got it — bought, granted by an admin, comped, or through a subscription.
+A user's access to a course, however they got it — bought, granted by an admin, or through a subscription.
 _Avoid_: Purchase, subscription, membership
+
+**Grant**:
+An admin enrolling a user in a course without payment, drafts included. Recorded as either a **manual** grant — a support fix, for someone who paid another way or whose purchase failed to enroll them — or a **comp**: access given away, to staff, press or a beta tester.
+_Avoid_: Gift, add, assign
+
+**Revoke**:
+Ending an enrollment. It refunds nothing: refunding is a separate act on the order.
+_Avoid_: Remove, cancel, unenroll
+
+**Restore**:
+Bringing a revoked enrollment back exactly as it was — same source, same order. A course the user was revoked from is restored, never granted afresh.
+_Avoid_: Re-grant, re-enroll
 
 **Enrolled**:
 Holding an active enrollment in a course, whatever its source. A revoked enrollment leaves the user not enrolled; buying the course again reactivates that enrollment rather than creating a second one.
