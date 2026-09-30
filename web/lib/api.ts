@@ -696,3 +696,71 @@ export async function requestAdminLessonUpload(
     { method: "POST", body: JSON.stringify({ kind }) },
   );
 }
+
+export const USER_ROLES = ["learner", "instructor", "admin"] as const;
+
+export type UserRole = (typeof USER_ROLES)[number];
+
+export function isUserRole(value: unknown): value is UserRole {
+  return USER_ROLES.includes(value as UserRole);
+}
+
+export const ACCOUNT_STATUSES = ["active", "suspended", "deleted"] as const;
+
+export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
+
+export function isAccountStatus(value: unknown): value is AccountStatus {
+  return ACCOUNT_STATUSES.includes(value as AccountStatus);
+}
+
+export const ADMIN_USER_SORTS = ["newest", "name", "email"] as const;
+
+export type AdminUserSort = (typeof ADMIN_USER_SORTS)[number];
+
+export function isAdminUserSort(value: unknown): value is AdminUserSort {
+  return ADMIN_USER_SORTS.includes(value as AdminUserSort);
+}
+
+export type AdminUserSummary = {
+  id: string;
+  email: string;
+  /** Blank when Clerk has no name for them. */
+  name: string;
+  /** Blank when Clerk has no image for them. */
+  avatar_url: string;
+  role: UserRole;
+  status: AccountStatus;
+  /** Revoked enrollments are not counted. */
+  active_enrollment_count: number;
+  created_at: string;
+};
+
+/**
+ * Every user, 20 per page. `q` matches name or email; a blank `q` is no
+ * filter, and a missing `status` means every status, deleted included. Throws
+ * `ApiError` with status 404 for a page past the last, 403 for anyone but an
+ * admin, and on any other failure.
+ */
+export async function fetchAdminUsers({
+  q = "",
+  role,
+  status,
+  sort = "newest",
+  page = 1,
+}: {
+  q?: string;
+  role?: UserRole;
+  status?: AccountStatus;
+  sort?: AdminUserSort;
+  page?: number;
+} = {}): Promise<Paginated<AdminUserSummary>> {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set("q", q.trim());
+  if (role) params.set("role", role);
+  if (status) params.set("status", status);
+  if (sort !== "newest") params.set("sort", sort);
+  if (page > 1) params.set("page", String(page));
+
+  const query = params.size ? `?${params}` : "";
+  return apiFetch<Paginated<AdminUserSummary>>(`/api/admin/users/${query}`);
+}

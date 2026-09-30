@@ -15,6 +15,8 @@ import {
 } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 
+import { ListPagination } from "../_components/list-pagination";
+import { firstValue, parsePage } from "../_lib/list-params";
 import { requireAdmin } from "../_lib/require-admin";
 import { STATUS_LABELS, StatusBadge } from "./_components/status-badge";
 
@@ -33,15 +35,6 @@ type Filters = {
   status: CourseStatus | undefined;
   sort: AdminCourseSort;
 };
-
-function firstValue(value: string | string[] | undefined): string {
-  return (Array.isArray(value) ? value[0] : value) ?? "";
-}
-
-function parsePage(value: string): number {
-  const page = Number(value);
-  return Number.isInteger(page) && page > 1 ? page : 1;
-}
 
 function listHref({ q, status, sort }: Filters, page = 1) {
   const params = new URLSearchParams();
@@ -123,11 +116,11 @@ export default async function AdminCoursesPage({
               {courses.count === 1 ? "1 course" : `${courses.count} courses`}
             </p>
             <CourseTable courses={courses.results} />
-            <Pagination
-              filters={filters}
+            <ListPagination
               page={page}
               hasPrevious={courses.previous !== null}
               hasNext={courses.next !== null}
+              pageHref={(target) => listHref(filters, target)}
             />
           </>
         )}
@@ -285,45 +278,5 @@ function CourseTable({ courses }: { courses: AdminCourseSummary[] }) {
         </tbody>
       </table>
     </div>
-  );
-}
-
-function Pagination({
-  filters,
-  page,
-  hasPrevious,
-  hasNext,
-}: {
-  filters: Filters;
-  page: number;
-  hasPrevious: boolean;
-  hasNext: boolean;
-}) {
-  if (!hasPrevious && !hasNext) return null;
-
-  const linkClassName = "type-label-md text-primary underline";
-  const disabledClassName = "type-label-md text-meta-text opacity-60";
-
-  return (
-    <nav
-      aria-label="Pagination"
-      className="mt-lg flex items-center justify-between gap-md"
-    >
-      {hasPrevious ? (
-        <Link href={listHref(filters, page - 1)} className={linkClassName}>
-          Previous
-        </Link>
-      ) : (
-        <span className={disabledClassName}>Previous</span>
-      )}
-      <span className="type-body-sm text-meta-text">Page {page}</span>
-      {hasNext ? (
-        <Link href={listHref(filters, page + 1)} className={linkClassName}>
-          Next
-        </Link>
-      ) : (
-        <span className={disabledClassName}>Next</span>
-      )}
-    </nav>
   );
 }
