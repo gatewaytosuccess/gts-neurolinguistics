@@ -1,14 +1,21 @@
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.db.models.functions import Lower
 from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from commerce.models import Order, OrderItem
 from enrollments.models import EnrollmentStatus
+from reviews.models import Review
 
 from .models import User
 from .permissions import IsAdmin
-from .serializers import AdminUserFiltersSerializer, AdminUserListSerializer, UserSerializer
+from .serializers import (
+    AdminUserDetailSerializer,
+    AdminUserFiltersSerializer,
+    AdminUserListSerializer,
+    UserSerializer,
+)
 
 
 @api_view(["GET"])
@@ -60,3 +67,24 @@ class AdminUserListView(generics.ListAPIView):
         return users.order_by(
             *ADMIN_USER_SORT_ORDERINGS.get(sort, ADMIN_USER_SORT_ORDERINGS[ADMIN_USER_DEFAULT_SORT])
         )
+
+
+class AdminUserDetailView(generics.RetrieveAPIView):
+    """Any user, deleted ones included, with every order and review, newest first."""
+
+    serializer_class = AdminUserDetailSerializer
+    permission_classes = [IsAdmin]
+    queryset = User.objects.prefetch_related(
+        Prefetch(
+            "orders",
+            queryset=Order.objects.order_by("-created_at").prefetch_related(
+                Prefetch(
+                    "items",
+                    queryset=OrderItem.objects.select_related("course").order_by("course__title"),
+                )
+            ),
+        ),
+        Prefetch(
+            "reviews", queryset=Review.objects.select_related("course").order_by("-created_at")
+        ),
+    )

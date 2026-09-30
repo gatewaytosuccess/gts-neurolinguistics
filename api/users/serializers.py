@@ -1,5 +1,9 @@
 from rest_framework import serializers
 
+from commerce.models import Order, OrderItem
+from courses.models import Course
+from reviews.models import Review
+
 from .models import Role, User, UserStatus
 
 
@@ -41,3 +45,66 @@ class AdminUserFiltersSerializer(serializers.Serializer):
 
     role = serializers.ChoiceField(choices=Role.choices, required=False, allow_blank=True)
     status = serializers.ChoiceField(choices=UserStatus.choices, required=False, allow_blank=True)
+
+
+class AdminUserOrderItemSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(source="course.title", read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ["title", "unit_price_cents"]
+        read_only_fields = fields
+
+
+class AdminUserOrderSerializer(serializers.ModelSerializer):
+    items = AdminUserOrderItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ["id", "created_at", "status", "total_cents", "items"]
+        read_only_fields = fields
+
+
+class AdminUserReviewCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ["id", "title", "slug", "status"]
+        read_only_fields = fields
+
+
+class AdminUserReviewSerializer(serializers.ModelSerializer):
+    course = AdminUserReviewCourseSerializer(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ["id", "rating", "body", "status", "created_at", "course"]
+        read_only_fields = fields
+
+
+class AdminUserDetailSerializer(serializers.ModelSerializer):
+    """Hidden reviews and draft courses included. The Clerk id itself is never exposed."""
+
+    has_clerk_identity = serializers.SerializerMethodField()
+    orders = AdminUserOrderSerializer(many=True, read_only=True)
+    reviews = AdminUserReviewSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "name",
+            "avatar_url",
+            "role",
+            "status",
+            "suspended_at",
+            "suspension_reason",
+            "created_at",
+            "has_clerk_identity",
+            "orders",
+            "reviews",
+        ]
+        read_only_fields = fields
+
+    def get_has_clerk_identity(self, user):
+        return bool(user.clerk_user_id)
