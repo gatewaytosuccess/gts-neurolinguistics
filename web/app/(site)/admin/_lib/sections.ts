@@ -18,7 +18,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     label: "Users",
     href: "/admin/users",
     description:
-      "Find accounts, change roles, suspend or ban, and grant enrollments.",
+      "Find accounts, change roles, suspend, and grant enrollments.",
     available: false,
   },
   {

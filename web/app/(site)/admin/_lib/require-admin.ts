@@ -6,8 +6,8 @@ import { ApiError, fetchCurrentUser } from "@/lib/api";
 
 /**
  * Redirects a signed-out visitor to sign-in and 404s anyone whose role isn't
- * `admin`, suspended and banned accounts included. `"unavailable"` when the
- * API can't answer: render no admin content.
+ * `admin`, suspended accounts included. `"unavailable"` when the API can't
+ * answer: render no admin content.
  *
  * Only hides pages; every admin endpoint must enforce the role itself.
  */

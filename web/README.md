@@ -27,6 +27,7 @@ web/
       _components/landing/  one component per landing section
       _content/landing.ts   landing copy as typed data
     dashboard/       signed-in home; reads /api/users/me
+    suspended/       where signed-in pages send a suspended user
     admin/           admin area: shared layout, side nav and access check
     sign-up/[[...sign-up]]/
     sign-in/[[...sign-in]]/

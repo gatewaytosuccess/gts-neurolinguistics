@@ -92,9 +92,7 @@ class TestFiltering:
 
         assert listed_ids(get_reviews(client)) == [str(shown.id)]
 
-    @pytest.mark.parametrize(
-        "status", [UserStatus.SUSPENDED, UserStatus.BANNED, UserStatus.DELETED]
-    )
+    @pytest.mark.parametrize("status", [UserStatus.SUSPENDED, UserStatus.DELETED])
     def test_the_authors_account_status_does_not_matter(self, client, status):
         course = make_course()
         author = User.objects.create_user(

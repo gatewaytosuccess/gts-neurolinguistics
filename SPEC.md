@@ -96,7 +96,7 @@ Admin sees the same learner-facing views, plus:
 - Publish/unpublish courses (draft vs. live)
 - Content versioning — update a lesson without breaking learners mid-course
 - Grant courses to specific users (manual enrollment/comping access), including bulk enrollment
-- Manage users (view accounts, revoke access, reset passwords, ban/suspend)
+- Manage users (view accounts, revoke access, reset passwords, suspend)
 - Manage coupons/discounts and bundles
 - Admin dashboard — admin controls + analytics (enrollment numbers, revenue, completion rates, etc...
 - Notification system — push announcements (new course, live Q&A, etc.) to users

@@ -38,15 +38,15 @@
 | name | string | not null | |
 | avatar_url | string | nullable | |
 | role | enum | not null, default `learner` | `learner \| instructor \| admin` |
-| status | enum | not null, default `active` | `active \| suspended \| banned \| deleted` — anything other than `active` blocks login. See below |
-| suspended_at | timestamp | nullable | Set when a user is suspended or banned |
+| status | enum | not null, default `active` | `active \| suspended \| deleted` — anything other than `active` blocks login. See below |
+| suspended_at | timestamp | nullable | Set when a user is suspended |
 | suspension_reason | string | nullable | Admin audit note |
 | created_at | timestamp | not null | |
 | updated_at | timestamp | not null | |
 
 Account status splits along one axis: who can clear it.
 
-- `suspended` / `banned` are imposed by an admin and only an admin lifts them. Deleting the Clerk account does not clear them, and signing up again with the same email is refused rather than granted.
+- `suspended` is imposed by an admin and only an admin lifts it, by reinstating. Deleting the Clerk account does not clear it, and signing up again with the same email is refused rather than granted. Reinstating returns the row to `active`, or to `deleted` if its `clerk_user_id` was released while suspended.
 - `deleted` is self-service: the user deleted their Clerk account. The row survives — it is the foreign key target for enrollments, orders and reviews — with `clerk_user_id` released. Signing up again with the same email resurrects it, enrollments intact.
 
 ### COURSES

@@ -152,7 +152,7 @@ Clerk and both of which go through `users.sync` so they cannot disagree:
 
 The table is a read-only mirror — see `../docs/adr/0001-clerk-owns-identity.md`
 for why there is no endpoint to edit a profile, and `users/sync.py` for the
-rules on deleted, suspended and banned accounts.
+rules on deleted and suspended accounts.
 
 DRF defaults to `IsAuthenticated`, so new views are private unless they opt out
 with `AllowAny` (public catalog, preview lessons, blog).
