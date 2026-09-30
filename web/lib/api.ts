@@ -74,6 +74,18 @@ export type CourseDetail = CourseSummary & {
   modules: CourseModule[];
 };
 
+export type CourseReview = {
+  id: string;
+  /** 1 to 5. */
+  rating: number;
+  /** Plain text, never blank; line breaks are the author's. */
+  body: string;
+  /** "Maria G."; blank when the author has no name. */
+  author_name: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CourseStatus = "draft" | "published";
 
 export type AdminCourseSummary = {
@@ -299,6 +311,23 @@ export async function fetchCourses({
 export async function fetchCourse(slug: string): Promise<CourseDetail> {
   return publicFetch<CourseDetail>(
     `/api/courses/${encodeURIComponent(slug)}/`,
+    [courseCacheTag(slug)],
+  );
+}
+
+/**
+ * A published course's reviews that have a body, newest first, 10 per page.
+ * Rating-only reviews are left out but count in the course's rating. Throws
+ * `ApiError` with status 404 for a draft or unknown slug or a page past the
+ * last, and on any other failure.
+ */
+export async function fetchCourseReviews(
+  slug: string,
+  page = 1,
+): Promise<Paginated<CourseReview>> {
+  const query = page > 1 ? `?page=${page}` : "";
+  return publicFetch<Paginated<CourseReview>>(
+    `/api/courses/${encodeURIComponent(slug)}/reviews/${query}`,
     [courseCacheTag(slug)],
   );
 }
