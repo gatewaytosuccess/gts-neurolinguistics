@@ -216,6 +216,17 @@ export function publishProblems(error: unknown): string[] | null {
   return Array.isArray(problems) ? problems.map(String) : null;
 }
 
+/**
+ * Whether the API refused the session because the user is suspended, as
+ * opposed to an expired or invalid token. Signed-in-only pages redirect to
+ * `/suspended` on it.
+ */
+export function isAccountSuspended(error: unknown): boolean {
+  if (!(error instanceof ApiError) || error.status !== 401) return false;
+  const { code } = (error.body ?? {}) as { code?: unknown };
+  return code === "account_suspended";
+}
+
 export type Enrollment = {
   id: string;
   course_id: string;
@@ -275,8 +286,8 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 /**
  * `null` if nobody is signed in. Throws if the API is unreachable or returns
- * non-2xx; `ApiError` with status 401 for a suspended account. Safe right
- * after sign-up: the API provisions a missing row. Deduplicated per request.
+ * non-2xx; a suspended account's `ApiError` passes `isAccountSuspended`. Safe
+ * right after sign-up: the API provisions a missing row. Deduplicated per request.
  */
 export const fetchCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const { userId } = await auth();
@@ -287,8 +298,8 @@ export const fetchCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
 /**
  * The signed-in user's active enrollments, including in draft courses. `null`
- * if nobody is signed in. Throws `ApiError` with status 401 for a suspended
- * account, and on any other failure.
+ * if nobody is signed in. Throws on any failure; a suspended account's
+ * `ApiError` passes `isAccountSuspended`.
  */
 export async function fetchEnrollments(): Promise<Enrollment[] | null> {
   const { userId } = await auth();

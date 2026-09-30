@@ -95,6 +95,11 @@ class ClerkAuthentication(authentication.BaseAuthentication):
                     "This email is already linked to another account."
                 )
 
+        if user.status == UserStatus.SUSPENDED:
+            # The code lets the web app tell a suspension from an expired or invalid token.
+            raise exceptions.AuthenticationFailed(
+                {"detail": "Account is suspended.", "code": "account_suspended"}
+            )
         if user.status != UserStatus.ACTIVE:
             raise exceptions.AuthenticationFailed(f"Account is {user.status}.")
         return user

@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
-import { fetchCurrentUser, type CurrentUser } from "@/lib/api";
+import {
+  fetchCurrentUser,
+  isAccountSuspended,
+  type CurrentUser,
+} from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -12,12 +17,16 @@ export default async function DashboardPage() {
   if (!userId) return redirectToSignIn();
 
   let user: CurrentUser | null = null;
+  let suspended = false;
 
   try {
     user = await fetchCurrentUser();
-  } catch {
-    // An unreachable API should degrade to a page that says so, not a 500.
+  } catch (error) {
+    // Anything else, an unreachable API included, degrades to a page that says so.
+    suspended = isAccountSuspended(error);
   }
+
+  if (suspended) redirect("/suspended");
 
   return (
     <main className="mx-auto w-full max-w-[1200px] flex-1 px-md py-2xl sm:px-margin">

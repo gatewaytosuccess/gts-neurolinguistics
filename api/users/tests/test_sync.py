@@ -91,13 +91,12 @@ class TestDeletedIsReversible:
         assert user.clerk_user_id == "user_new"
 
 
-class TestBansAreNot:
-    @pytest.mark.parametrize("status", [UserStatus.SUSPENDED, UserStatus.BANNED])
-    def test_signing_up_again_cannot_clear_one(self, make_user, status):
-        make_user(email="ada@example.com", status=status)
+class TestSuspensionIsNot:
+    def test_signing_up_again_cannot_clear_it(self, make_user):
+        make_user(email="ada@example.com", status=UserStatus.SUSPENDED)
         with pytest.raises(MirrorConflict):
             mirror_user(clerk_user_id="user_new", email="ada@example.com")
-        assert User.objects.get(email="ada@example.com").status == status
+        assert User.objects.get(email="ada@example.com").status == UserStatus.SUSPENDED
 
 
 class TestForgetUser:
@@ -112,21 +111,20 @@ class TestForgetUser:
         forget_user("user_1")
         assert User.objects.filter(email="ada@example.com").exists()
 
-    @pytest.mark.parametrize("status", [UserStatus.SUSPENDED, UserStatus.BANNED])
-    def test_deleting_a_clerk_account_is_not_a_way_out_of_a_ban(self, make_user, status):
-        make_user(email="ada@example.com", clerk_user_id="user_1", status=status)
+    def test_deleting_a_clerk_account_is_not_a_way_out_of_a_suspension(self, make_user):
+        make_user(email="ada@example.com", clerk_user_id="user_1", status=UserStatus.SUSPENDED)
         user = forget_user("user_1")
-        assert user.status == status
+        assert user.status == UserStatus.SUSPENDED
         assert user.clerk_user_id is None
 
     def test_ignores_a_user_we_never_mirrored(self):
         assert forget_user("user_unknown") is None
 
 
-class TestTheFullBanEvasionRoute:
-    def test_ban_then_delete_then_sign_up_again_still_lands_on_banned(self, make_user):
-        make_user(email="ada@example.com", clerk_user_id="user_1", status=UserStatus.BANNED)
+class TestTheFullSuspensionEvasionRoute:
+    def test_suspend_then_delete_then_sign_up_again_still_lands_on_suspended(self, make_user):
+        make_user(email="ada@example.com", clerk_user_id="user_1", status=UserStatus.SUSPENDED)
         forget_user("user_1")
         with pytest.raises(MirrorConflict):
             mirror_user(clerk_user_id="user_2", email="ada@example.com")
-        assert User.objects.get(email="ada@example.com").status == UserStatus.BANNED
+        assert User.objects.get(email="ada@example.com").status == UserStatus.SUSPENDED

@@ -45,9 +45,8 @@ def test_forbids_every_other_role(make_user, signed_in, role):
     assert call_signed_in().status_code == 403
 
 
-@pytest.mark.parametrize("status", [UserStatus.SUSPENDED, UserStatus.BANNED])
-def test_rejects_a_suspended_admin_as_unauthenticated(make_user, signed_in, status):
-    make_user(clerk_user_id="user_2abcDEF", role=Role.ADMIN, status=status)
+def test_rejects_a_suspended_admin_as_unauthenticated(make_user, signed_in):
+    make_user(clerk_user_id="user_2abcDEF", role=Role.ADMIN, status=UserStatus.SUSPENDED)
     assert call_signed_in().status_code == 401
 
 

@@ -17,7 +17,7 @@ class Role(models.TextChoices):
 
 
 class UserStatus(models.TextChoices):
-    """``suspended`` and ``banned`` are cleared only by an admin.
+    """``suspended`` is cleared only by an admin.
 
     ``deleted`` means the user deleted their Clerk account; signing up again
     with the same email reactivates the row. ``users.sync`` enforces both.
@@ -25,7 +25,6 @@ class UserStatus(models.TextChoices):
 
     ACTIVE = "active", "Active"
     SUSPENDED = "suspended", "Suspended"
-    BANNED = "banned", "Banned"
     DELETED = "deleted", "Deleted"
 
 
@@ -93,8 +92,8 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
     def is_instructor(self):
         return self.role in {Role.INSTRUCTOR, Role.ADMIN}
 
-    def suspend(self, reason="", *, banned=False):
-        self.status = UserStatus.BANNED if banned else UserStatus.SUSPENDED
+    def suspend(self, reason=""):
+        self.status = UserStatus.SUSPENDED
         self.suspended_at = timezone.now()
         self.suspension_reason = reason
         self.save(update_fields=["status", "suspended_at", "suspension_reason", "updated_at"])
@@ -104,7 +103,8 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
         return self.status == UserStatus.DELETED
 
     def reinstate(self):
-        self.status = UserStatus.ACTIVE
+        # Without a Clerk identity an active row is one nobody can sign in to.
+        self.status = UserStatus.ACTIVE if self.clerk_user_id else UserStatus.DELETED
         self.suspended_at = None
         self.suspension_reason = ""
         self.save(update_fields=["status", "suspended_at", "suspension_reason", "updated_at"])

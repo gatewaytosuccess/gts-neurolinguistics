@@ -80,8 +80,8 @@ def _link_existing(user, clerk_user_id, *, email, name, avatar_url):
             f"refusing to relink it to {clerk_user_id}."
         )
 
-    if user.status in {UserStatus.SUSPENDED, UserStatus.BANNED}:
-        # Signing up again must not clear a suspension or ban.
+    if user.status == UserStatus.SUSPENDED:
+        # Signing up again must not clear a suspension.
         raise MirrorConflict(
             f"Email {email} belongs to a {user.status} account; refusing to link "
             f"Clerk user {clerk_user_id} to it."
@@ -129,8 +129,8 @@ def _update_mirrored_fields(user, *, email, name, avatar_url, force=False):
 def forget_user(clerk_user_id):
     """Release the Clerk id and mark an active row ``deleted``. Never deletes the row.
 
-    Orders, enrollments and reviews reference it. A suspended or banned row
-    keeps its status. Returns ``None`` if the Clerk user was never mirrored.
+    Orders, enrollments and reviews reference it. A suspended row keeps
+    its status. Returns ``None`` if the Clerk user was never mirrored.
     """
     with transaction.atomic():
         user = User.objects.select_for_update().filter(clerk_user_id=clerk_user_id).first()
