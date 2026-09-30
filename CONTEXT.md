@@ -112,6 +112,10 @@ _Avoid_: Package, collection
 A user's transaction for one or more courses. Distinct from the enrollments it produces: refunding an order and revoking access are separate acts.
 _Avoid_: Payment, receipt, invoice
 
+**Review**:
+A learner's star rating of a course, with optional written words. Only someone enrolled can write one, whatever the source of their enrollment, and only one per course; they can edit or delete it later. It outlives the enrollment: a revoked learner's review stays. An admin can hide a review, and only an admin can bring it back — editing it doesn't.
+_Avoid_: Rating (the number alone), testimonial, comment
+
 ### Marketing
 
 **Testimonial**:
