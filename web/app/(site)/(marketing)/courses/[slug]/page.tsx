@@ -9,6 +9,7 @@ import {
   fetchCourseReviews,
   fetchCurrentUser,
   fetchEnrollments,
+  fetchMyReview,
   type CourseDetail,
   type CourseReview,
   type Paginated,
@@ -18,8 +19,10 @@ import { markdownExcerpt } from "@/lib/markdown-excerpt";
 import { InstructorCredentials } from "../../_components/landing/instructor-credentials";
 import { landing } from "../../_content/landing";
 import { Curriculum } from "./_components/curriculum";
+import { MyReviewPanel } from "./_components/my-review";
 import { PurchasePanel } from "./_components/purchase-panel";
 import { Reviews } from "./_components/reviews";
+import { deleteReview, saveReview } from "./_lib/review-actions";
 
 /**
  * `null` if the API is unreachable or errors. Throws Next's not-found error on
@@ -82,11 +85,16 @@ export default async function CoursePage({
 }: PageProps<"/courses/[slug]">) {
   const { slug } = await params;
   const reviewsPage = parsePage((await searchParams).reviews);
-  const [course, reviews, [enrollments, currentUser]] = await Promise.all([
-    loadCourse(slug),
-    loadReviews(slug, reviewsPage),
-    Promise.allSettled([fetchEnrollments(), fetchCurrentUser()]),
-  ]);
+  const [course, reviews, [enrollments, currentUser, myReview]] =
+    await Promise.all([
+      loadCourse(slug),
+      loadReviews(slug, reviewsPage),
+      Promise.allSettled([
+        fetchEnrollments(),
+        fetchCurrentUser(),
+        fetchMyReview(slug),
+      ]),
+    ]);
 
   if (course === null) {
     return (
@@ -154,6 +162,21 @@ export default async function CoursePage({
         ratingCount={course.rating_count}
         reviews={reviews?.reviews ?? null}
         page={reviews?.page ?? 1}
+        ownReview={
+          enrolled &&
+          (myReview.status === "fulfilled" ? (
+            <MyReviewPanel
+              key={myReview.value?.updated_at ?? "none"}
+              review={myReview.value}
+              save={saveReview.bind(null, course.slug)}
+              remove={deleteReview.bind(null, course.slug)}
+            />
+          ) : (
+            <p className="type-body-sm rounded-sm bg-warning-subtle px-sm py-sm text-warning">
+              Your review couldn&rsquo;t be loaded right now.
+            </p>
+          ))
+        }
       />
     </>
   );

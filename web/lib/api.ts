@@ -86,6 +86,23 @@ export type CourseReview = {
   updated_at: string;
 };
 
+export type ReviewStatus = "published" | "hidden";
+
+/** The signed-in learner's own review of a course. */
+export type MyReview = {
+  id: string;
+  /** 1 to 5. */
+  rating: number;
+  /** Plain text; blank for a rating-only review. */
+  body: string;
+  /** A hidden review is shown to nobody but its author. */
+  status: ReviewStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MyReviewInput = { rating: number; body: string };
+
 export type CourseStatus = "draft" | "published";
 
 export type AdminCourseSummary = {
@@ -330,6 +347,51 @@ export async function fetchCourseReviews(
     `/api/courses/${encodeURIComponent(slug)}/reviews/${query}`,
     [courseCacheTag(slug)],
   );
+}
+
+/**
+ * The signed-in learner's review of a published course, hidden or not. `null`
+ * if nobody is signed in or they have none. Throws `ApiError` with status 401
+ * for a suspended account, and on any other failure.
+ */
+export async function fetchMyReview(slug: string): Promise<MyReview | null> {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  try {
+    return await apiFetch<MyReview>(
+      `/api/courses/${encodeURIComponent(slug)}/reviews/mine/`,
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+/**
+ * Creates or replaces the learner's review; a hidden review stays hidden.
+ * Throws `ApiError` with status 400 and a `FieldErrors` body for invalid
+ * input, 403 without an active enrollment, 404 for a draft or unknown slug,
+ * and on any other failure.
+ */
+export async function saveMyReview(
+  slug: string,
+  input: MyReviewInput,
+): Promise<MyReview> {
+  return apiFetch<MyReview>(
+    `/api/courses/${encodeURIComponent(slug)}/reviews/mine/`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+/**
+ * Needs no enrollment. Throws `ApiError` with status 404 when there is no
+ * review or the course is a draft or unknown, and on any other failure.
+ */
+export async function deleteMyReview(slug: string): Promise<void> {
+  await apiFetch(`/api/courses/${encodeURIComponent(slug)}/reviews/mine/`, {
+    method: "DELETE",
+  });
 }
 
 export const ADMIN_COURSE_SORTS = ["updated", "title", "created"] as const;
