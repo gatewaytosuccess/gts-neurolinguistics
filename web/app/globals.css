@@ -197,9 +197,14 @@
   font-weight: 600;
   line-height: 1.3;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: var(--color-tertiary-strong);
     color: var(--color-paper-raised);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 }
 
