@@ -1,11 +1,13 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 
 import {
   ApiError,
+  courseCacheTag,
   requestAdminLessonUpload,
   updateAdminLesson,
+  type AdminLesson,
   type AdminLessonInput,
   type FieldErrors,
   type LessonFileKind,
@@ -57,11 +59,13 @@ export async function saveLessonFile(
     kind === "video" ? { video_key: key } : { slides_key: key };
   if (durationSeconds !== undefined) input.duration_seconds = durationSeconds;
 
+  let lesson: AdminLesson;
   try {
-    await updateAdminLesson(lessonId, input);
+    lesson = await updateAdminLesson(lessonId, input);
   } catch (error) {
     return { error: errorMessage(error) };
   }
+  updateTag(courseCacheTag(lesson.course.slug));
   refresh();
   return {};
 }

@@ -1,9 +1,10 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 
 import {
   ApiError,
+  courseCacheTag,
   publishProblems,
   updateAdminLesson,
   type AdminLesson,
@@ -93,6 +94,7 @@ export async function updateLesson(
     return { values, errors: formErrors(error) };
   }
 
+  updateTag(courseCacheTag(lesson.course.slug));
   // Re-renders the heading and breadcrumb above the form.
   refresh();
   return { values: lessonEditorValues(lesson), errors: {}, saved: true };

@@ -43,6 +43,37 @@ export type CourseSummary = {
   rating_count: number;
 };
 
+export type LessonKind = "video" | "slides" | "text";
+
+export type CourseLesson = {
+  id: string;
+  title: string;
+  position: number;
+  /** Positive, or `null` when unknown. */
+  duration_seconds: number | null;
+  is_preview: boolean;
+  /** Which kinds of content it has, in the order video, slides, text. */
+  kinds: LessonKind[];
+};
+
+export type CourseModule = {
+  id: string;
+  title: string;
+  position: number;
+  lesson_count: number;
+  lessons: CourseLesson[];
+};
+
+export type CourseDetail = CourseSummary & {
+  module_count: number;
+  lesson_count: number;
+  preview_lesson_count: number;
+  /** The sum of the lessons' known durations; `null` when no lesson has one. */
+  duration_seconds: number | null;
+  /** In order, each with its lessons in order. */
+  modules: CourseModule[];
+};
+
 export type CourseStatus = "draft" | "published";
 
 export type AdminCourseSummary = {
@@ -118,7 +149,7 @@ export type AdminLesson = {
   position: number;
   is_empty: boolean;
   module: { id: string; title: string; position: number };
-  course: { id: string; title: string; status: CourseStatus };
+  course: { id: string; title: string; slug: string; status: CourseStatus };
 };
 
 export type AdminLessonInput = Pick<
@@ -262,11 +293,11 @@ export async function fetchCourses({
 }
 
 /**
- * A published course. Throws `ApiError` with status 404 for a draft or unknown
- * slug, and on any other failure.
+ * A published course with its curriculum. Throws `ApiError` with status 404
+ * for a draft or unknown slug, and on any other failure.
  */
-export async function fetchCourse(slug: string): Promise<CourseSummary> {
-  return publicFetch<CourseSummary>(
+export async function fetchCourse(slug: string): Promise<CourseDetail> {
+  return publicFetch<CourseDetail>(
     `/api/courses/${encodeURIComponent(slug)}/`,
     [courseCacheTag(slug)],
   );

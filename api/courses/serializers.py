@@ -44,6 +44,86 @@ class CourseListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class PublicLessonSerializer(serializers.ModelSerializer):
+    """Expects lessons annotated with ``has_body``.
+
+    ``kinds`` lists which of ``video``, ``slides`` and ``text`` the lesson has, in
+    that order. Never carries object keys, URLs or the body.
+    """
+
+    kinds = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Lesson
+        fields = ["id", "title", "position", "duration_seconds", "is_preview", "kinds"]
+        read_only_fields = fields
+
+    def get_kinds(self, lesson):
+        present = {"video": lesson.video_key, "slides": lesson.slides_key, "text": lesson.has_body}
+        return [kind for kind, has_it in present.items() if has_it]
+
+
+class PublicModuleSerializer(serializers.ModelSerializer):
+    """Expects lessons prefetched the way ``PublicLessonSerializer`` expects them."""
+
+    lesson_count = serializers.SerializerMethodField()
+    lessons = PublicLessonSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Module
+        fields = ["id", "title", "position", "lesson_count", "lessons"]
+        read_only_fields = fields
+
+    def get_lesson_count(self, module):
+        return len(module.lessons.all())
+
+
+class CourseDetailSerializer(CourseListSerializer):
+    """A catalog course with its curriculum.
+
+    Expects a queryset annotated by ``Course.objects.with_ratings()``, with modules
+    and lessons prefetched in order the way ``PublicModuleSerializer`` expects them.
+    ``duration_seconds`` sums the lessons that have one, and is null when none do.
+    """
+
+    module_count = serializers.SerializerMethodField()
+    lesson_count = serializers.SerializerMethodField()
+    preview_lesson_count = serializers.SerializerMethodField()
+    duration_seconds = serializers.SerializerMethodField()
+    modules = PublicModuleSerializer(many=True, read_only=True)
+
+    class Meta(CourseListSerializer.Meta):
+        fields = CourseListSerializer.Meta.fields + [
+            "module_count",
+            "lesson_count",
+            "preview_lesson_count",
+            "duration_seconds",
+            "modules",
+        ]
+        read_only_fields = fields
+
+    @staticmethod
+    def _lessons(course):
+        return [lesson for module in course.modules.all() for lesson in module.lessons.all()]
+
+    def get_module_count(self, course):
+        return len(course.modules.all())
+
+    def get_lesson_count(self, course):
+        return len(self._lessons(course))
+
+    def get_preview_lesson_count(self, course):
+        return sum(1 for lesson in self._lessons(course) if lesson.is_preview)
+
+    def get_duration_seconds(self, course):
+        known = [
+            lesson.duration_seconds
+            for lesson in self._lessons(course)
+            if lesson.duration_seconds is not None
+        ]
+        return sum(known) if known else None
+
+
 class AdminCourseListSerializer(serializers.ModelSerializer):
     """Expects a queryset annotated by ``Course.objects.with_counts()``."""
 
@@ -215,7 +295,7 @@ class LessonModuleSerializer(serializers.ModelSerializer):
 class LessonCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ["id", "title", "status"]
+        fields = ["id", "title", "slug", "status"]
         read_only_fields = fields
 
 

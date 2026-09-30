@@ -1,9 +1,10 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 
 import {
   ApiError,
+  courseCacheTag,
   createAdminLesson,
   createAdminModule,
   deleteAdminLesson,
@@ -35,13 +36,17 @@ function errorMessage(error: unknown): string {
   return "The course API couldn't make this change. Try again.";
 }
 
-async function edit(change: () => Promise<void>): Promise<OutlineActionState> {
+async function edit(
+  courseSlug: string,
+  change: () => Promise<void>,
+): Promise<OutlineActionState> {
   try {
     await change();
   } catch (error) {
     const problems = publishProblems(error);
     return problems ? { problems } : { error: errorMessage(error) };
   }
+  updateTag(courseCacheTag(courseSlug));
   refresh();
   return {};
 }
@@ -57,67 +62,75 @@ function position(formData: FormData): number | null {
 }
 
 export async function addModule(
+  courseSlug: string,
   courseId: string,
   _previous: OutlineActionState,
   formData: FormData,
 ): Promise<OutlineActionState> {
-  return edit(() => createAdminModule(courseId, title(formData)));
+  return edit(courseSlug, () => createAdminModule(courseId, title(formData)));
 }
 
 export async function renameModule(
+  courseSlug: string,
   moduleId: string,
   _previous: OutlineActionState,
   formData: FormData,
 ): Promise<OutlineActionState> {
-  return edit(() => renameAdminModule(moduleId, title(formData)));
+  return edit(courseSlug, () => renameAdminModule(moduleId, title(formData)));
 }
 
 export async function moveModule(
+  courseSlug: string,
   moduleId: string,
   _previous: OutlineActionState,
   formData: FormData,
 ): Promise<OutlineActionState> {
   const to = position(formData);
   if (to === null) return {};
-  return edit(() => moveAdminModule(moduleId, to));
+  return edit(courseSlug, () => moveAdminModule(moduleId, to));
 }
 
 export async function deleteModule(
+  courseSlug: string,
   moduleId: string,
 ): Promise<OutlineActionState> {
-  return edit(() => deleteAdminModule(moduleId));
+  return edit(courseSlug, () => deleteAdminModule(moduleId));
 }
 
 export async function addLesson(
+  courseSlug: string,
   moduleId: string,
   _previous: OutlineActionState,
   formData: FormData,
 ): Promise<OutlineActionState> {
-  return edit(() => createAdminLesson(moduleId, title(formData)));
+  return edit(courseSlug, () => createAdminLesson(moduleId, title(formData)));
 }
 
 export async function moveLesson(
+  courseSlug: string,
   lessonId: string,
   _previous: OutlineActionState,
   formData: FormData,
 ): Promise<OutlineActionState> {
   const to = position(formData);
   if (to === null) return {};
-  return edit(() => moveAdminLesson(lessonId, { position: to }));
+  return edit(courseSlug, () => moveAdminLesson(lessonId, { position: to }));
 }
 
 export async function moveLessonToModule(
+  courseSlug: string,
   lessonId: string,
   _previous: OutlineActionState,
   formData: FormData,
 ): Promise<OutlineActionState> {
   const moduleId = String(formData.get("module_id") ?? "");
   if (!moduleId) return { error: "Choose a module to move the lesson to." };
-  return edit(() => moveAdminLesson(lessonId, { moduleId }));
+  return edit(courseSlug, () => moveAdminLesson(lessonId, { moduleId }));
 }
 
 export async function deleteLesson(
+  courseSlug: string,
   lessonId: string,
 ): Promise<OutlineActionState> {
-  return edit(() => deleteAdminLesson(lessonId));
+  return edit(courseSlug, () => deleteAdminLesson(lessonId));
 }

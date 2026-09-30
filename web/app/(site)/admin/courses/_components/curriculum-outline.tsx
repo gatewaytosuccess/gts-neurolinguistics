@@ -59,9 +59,11 @@ function moduleDeleteWarning({
 
 export function CurriculumOutline({
   courseId,
+  courseSlug,
   modules,
 }: {
   courseId: string;
+  courseSlug: string;
   modules: CurriculumModule[];
 }) {
   return (
@@ -76,6 +78,7 @@ export function CurriculumOutline({
             <ModuleItem
               key={module.id}
               courseId={courseId}
+              courseSlug={courseSlug}
               module={module}
               number={index + 1}
               count={modules.length}
@@ -86,7 +89,7 @@ export function CurriculumOutline({
       )}
 
       <OutlineForm
-        action={addModule.bind(null, courseId)}
+        action={addModule.bind(null, courseSlug, courseId)}
         className="measure mt-lg flex flex-wrap items-end gap-sm"
       >
         <div className="flex min-w-0 flex-1 flex-col">
@@ -113,12 +116,14 @@ export function CurriculumOutline({
 
 function ModuleItem({
   courseId,
+  courseSlug,
   module,
   number,
   count,
   otherModules,
 }: {
   courseId: string;
+  courseSlug: string;
   module: CurriculumModule;
   number: number;
   count: number;
@@ -130,7 +135,7 @@ function ModuleItem({
     <li className="border-b border-border-strong py-lg">
       <div className="flex flex-wrap items-end gap-sm">
         <OutlineForm
-          action={renameModule.bind(null, module.id)}
+          action={renameModule.bind(null, courseSlug, module.id)}
           className="flex min-w-0 flex-1 flex-wrap items-end gap-sm"
         >
           <div className="flex min-w-[200px] flex-1 flex-col">
@@ -153,7 +158,7 @@ function ModuleItem({
         </OutlineForm>
 
         <OutlineForm
-          action={moveModule.bind(null, module.id)}
+          action={moveModule.bind(null, courseSlug, module.id)}
           className="flex flex-wrap gap-xs"
         >
           <MoveButtons
@@ -168,7 +173,7 @@ function ModuleItem({
           noun="module"
           title={module.title}
           warning={moduleDeleteWarning(module)}
-          action={deleteModule.bind(null, module.id)}
+          action={deleteModule.bind(null, courseSlug, module.id)}
         />
       </div>
 
@@ -178,6 +183,7 @@ function ModuleItem({
             <LessonItem
               key={lesson.id}
               courseId={courseId}
+              courseSlug={courseSlug}
               lesson={lesson}
               moduleNumber={number}
               count={module.lessons.length}
@@ -188,7 +194,7 @@ function ModuleItem({
       )}
 
       <OutlineForm
-        action={addLesson.bind(null, module.id)}
+        action={addLesson.bind(null, courseSlug, module.id)}
         className="mt-md flex flex-wrap items-center gap-sm"
       >
         <label htmlFor={`module-${module.id}-new-lesson`} className="sr-only">
@@ -213,12 +219,14 @@ function ModuleItem({
 
 function LessonItem({
   courseId,
+  courseSlug,
   lesson,
   moduleNumber,
   count,
   otherModules,
 }: {
   courseId: string;
+  courseSlug: string;
   lesson: CurriculumLesson;
   moduleNumber: number;
   count: number;
@@ -244,7 +252,7 @@ function LessonItem({
 
       <div className="flex flex-wrap items-center gap-sm">
         <OutlineForm
-          action={moveLesson.bind(null, lesson.id)}
+          action={moveLesson.bind(null, courseSlug, lesson.id)}
           className="flex flex-wrap gap-xs"
         >
           <MoveButtons
@@ -257,7 +265,7 @@ function LessonItem({
 
         {otherModules.length > 0 && (
           <OutlineForm
-            action={moveLessonToModule.bind(null, lesson.id)}
+            action={moveLessonToModule.bind(null, courseSlug, lesson.id)}
             className="flex flex-wrap items-center gap-xs"
           >
             <label htmlFor={moveSelectId} className="sr-only">
@@ -288,7 +296,7 @@ function LessonItem({
           noun="lesson"
           title={lesson.title}
           warning={lessonDeleteWarning(lesson)}
-          action={deleteLesson.bind(null, lesson.id)}
+          action={deleteLesson.bind(null, courseSlug, lesson.id)}
         />
       </div>
     </li>

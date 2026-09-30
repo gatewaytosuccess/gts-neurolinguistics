@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import type { CourseSummary } from "@/lib/api";
-import { formatPrice } from "@/lib/format";
+import type { CourseDetail } from "@/lib/api";
+import { formatApproximateDuration, formatPrice } from "@/lib/format";
 
 export function PurchasePanel({
   course,
@@ -9,7 +9,7 @@ export function PurchasePanel({
   isAdmin,
   className = "",
 }: {
-  course: CourseSummary;
+  course: CourseDetail;
   enrolled: boolean;
   isAdmin: boolean;
   className?: string;
@@ -46,6 +46,8 @@ export function PurchasePanel({
         {enrolled ? "The lesson viewer opens soon." : "Enrollment opens soon."}
       </p>
 
+      <CourseStats course={course} />
+
       {isAdmin && (
         <p className="mt-lg border-t border-rule pt-md">
           <Link
@@ -57,5 +59,29 @@ export function PurchasePanel({
         </p>
       )}
     </aside>
+  );
+}
+
+function CourseStats({ course }: { course: CourseDetail }) {
+  const stats: [string, string][] = [
+    ["Modules", String(course.module_count)],
+    ["Lessons", String(course.lesson_count)],
+  ];
+  if (course.duration_seconds !== null) {
+    stats.push(["Length", formatApproximateDuration(course.duration_seconds)]);
+  }
+  if (course.preview_lesson_count > 0) {
+    stats.push(["Preview lessons", String(course.preview_lesson_count)]);
+  }
+
+  return (
+    <dl className="mt-lg grid grid-cols-2 gap-x-md gap-y-sm border-t border-rule pt-md">
+      {stats.map(([term, value]) => (
+        <div key={term}>
+          <dt className="type-label-caps text-meta-text">{term}</dt>
+          <dd className="type-data-md mt-xs">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
