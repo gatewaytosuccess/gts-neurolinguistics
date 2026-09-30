@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Count, Prefetch, Q
+from django.db.models import BooleanField, Count, ExpressionWrapper, Prefetch, Q
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
@@ -18,6 +18,7 @@ from .serializers import (
     AdminLessonDetailSerializer,
     AdminLessonSerializer,
     AdminModuleSerializer,
+    CourseDetailSerializer,
     CourseListSerializer,
     LessonUploadSerializer,
     MoveLessonSerializer,
@@ -59,14 +60,29 @@ class CourseListView(generics.ListAPIView):
 
 
 class CourseDetailView(generics.RetrieveAPIView):
-    """A published course by slug; drafts 404 like unknown slugs."""
+    """A published course by slug, with its curriculum; drafts 404 like unknown slugs."""
 
-    queryset = Course.objects.published().with_ratings()
-    serializer_class = CourseListSerializer
+    serializer_class = CourseDetailSerializer
     lookup_field = "slug"
     # No authentication: a suspended user's token would otherwise 401 a public page.
     authentication_classes = []
     permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        # Bodies can be long, and only whether there is one is public.
+        lessons = (
+            Lesson.objects.defer("body")
+            .annotate(has_body=ExpressionWrapper(~Q(body=""), output_field=BooleanField()))
+            .order_by("position")
+        )
+        modules = Module.objects.prefetch_related(Prefetch("lessons", queryset=lessons)).order_by(
+            "position"
+        )
+        return (
+            Course.objects.published()
+            .with_ratings()
+            .prefetch_related(Prefetch("modules", queryset=modules))
+        )
 
 
 # Ties break by most recently updated.

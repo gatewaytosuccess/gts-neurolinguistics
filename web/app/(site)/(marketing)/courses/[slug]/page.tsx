@@ -8,19 +8,20 @@ import {
   fetchCourse,
   fetchCurrentUser,
   fetchEnrollments,
-  type CourseSummary,
+  type CourseDetail,
 } from "@/lib/api";
 import { markdownExcerpt } from "@/lib/markdown-excerpt";
 
 import { InstructorCredentials } from "../../_components/landing/instructor-credentials";
 import { landing } from "../../_content/landing";
+import { Curriculum } from "./_components/curriculum";
 import { PurchasePanel } from "./_components/purchase-panel";
 
 /**
  * `null` if the API is unreachable or errors. Throws Next's not-found error on
  * a 404, so it must be awaited in the render path.
  */
-async function loadCourse(slug: string): Promise<CourseSummary | null> {
+async function loadCourse(slug: string): Promise<CourseDetail | null> {
   try {
     return await fetchCourse(slug);
   } catch (error) {
@@ -100,7 +101,7 @@ export default async function CoursePage({
           className="min-w-0 md:sticky md:top-lg md:col-span-5 md:col-start-8 md:row-span-2 md:row-start-1 md:self-start lg:col-span-4 lg:col-start-9"
         />
 
-        <div className="min-w-0 md:col-span-7">
+        <div className="flex min-w-0 flex-col gap-2xl md:col-span-7">
           {course.description && (
             <section aria-labelledby="about-heading">
               <h2 id="about-heading" className="type-headline-sm">
@@ -111,6 +112,7 @@ export default async function CoursePage({
               </div>
             </section>
           )}
+          {course.modules.length > 0 && <Curriculum modules={course.modules} />}
         </div>
       </div>
 

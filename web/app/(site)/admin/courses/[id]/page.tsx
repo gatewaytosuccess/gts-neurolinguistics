@@ -126,7 +126,11 @@ export default async function AdminCoursePage({
             The course API is not responding, so the curriculum is unavailable.
           </p>
         ) : (
-          <CurriculumOutline courseId={course.id} modules={modules} />
+          <CurriculumOutline
+            courseId={course.id}
+            courseSlug={course.slug}
+            modules={modules}
+          />
         )}
       </section>
 

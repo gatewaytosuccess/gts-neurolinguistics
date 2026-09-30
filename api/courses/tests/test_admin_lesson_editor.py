@@ -98,7 +98,12 @@ class TestRetrieve:
             "position": 2,
             "is_empty": False,
             "module": {"id": str(module.pk), "title": "Anatomy", "position": 2},
-            "course": {"id": str(course.pk), "title": "Foundations", "status": "draft"},
+            "course": {
+                "id": str(course.pk),
+                "title": "Foundations",
+                "slug": "foundations",
+                "status": "draft",
+            },
         }
 
     def test_an_unknown_lesson_is_not_found(self, client, admin):
