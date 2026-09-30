@@ -25,3 +25,14 @@ export function formatApproximateDuration(seconds: number) {
   if (minutes < 60) return `about ${minutes} min`;
   return `about ${Math.round(minutes / 60)} h`;
 }
+
+const monthYear = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** "March 2026", from an ISO timestamp. */
+export function formatMonthYear(iso: string) {
+  return monthYear.format(new Date(iso));
+}
