@@ -40,7 +40,7 @@
 | role | enum | not null, default `learner` | `learner \| instructor \| admin` |
 | status | enum | not null, default `active` | `active \| suspended \| deleted` — anything other than `active` blocks login. See below |
 | suspended_at | timestamp | nullable | Set when a user is suspended |
-| suspension_reason | string | nullable | Admin audit note |
+| suspension_reason | string | not null, default `''` | Admin audit note, up to 500 characters; blank unless suspended |
 | created_at | timestamp | not null | |
 | updated_at | timestamp | not null | |
 
