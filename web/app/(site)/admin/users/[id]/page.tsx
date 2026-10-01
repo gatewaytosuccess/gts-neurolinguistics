@@ -5,7 +5,10 @@ import { notFound } from "next/navigation";
 import {
   ApiError,
   fetchAdminUser,
+  fetchAdminUserEnrollments,
   fetchCurrentUser,
+  type AdminCourseSummary,
+  type AdminEnrollment,
   type AdminUserDetail,
   type AdminUserOrder,
   type AdminUserReview,
@@ -15,10 +18,12 @@ import { Stars } from "@/components/stars";
 import { formatPrice } from "@/lib/format";
 
 import { requireAdmin } from "../../_lib/require-admin";
+import { Enrollments } from "../_components/enrollments";
 import { RoleControl } from "../_components/role-control";
 import { StatusBadge } from "../_components/status-badge";
 import { SuspensionControl } from "../_components/suspension-control";
 import { UserAvatar } from "../_components/user-avatar";
+import { fetchEveryAdminCourse } from "../_lib/courses";
 import { formatDate } from "../_lib/format";
 import { changeUserRole } from "../_lib/role-actions";
 
@@ -47,9 +52,15 @@ export default async function AdminUserPage({
   const { id } = await params;
 
   let user: AdminUserDetail;
+  let enrollments: AdminEnrollment[];
+  let courses: AdminCourseSummary[];
   let viewerId: string | undefined;
   try {
-    user = await fetchAdminUser(id);
+    [user, enrollments, courses] = await Promise.all([
+      fetchAdminUser(id),
+      fetchAdminUserEnrollments(id),
+      fetchEveryAdminCourse(),
+    ]);
     viewerId = (await fetchCurrentUser())?.id;
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
@@ -74,6 +85,18 @@ export default async function AdminUserPage({
         </h2>
         <Access user={user} isSelf={user.id === viewerId} />
         <SuspensionControl user={user} isSelf={user.id === viewerId} />
+      </section>
+
+      <section aria-labelledby="enrollments-heading" className="mt-3xl">
+        <h2 id="enrollments-heading" className="type-headline-sm">
+          Enrollments
+        </h2>
+        <Enrollments
+          userId={user.id}
+          name={user.name || user.email}
+          enrollments={enrollments}
+          courses={courses}
+        />
       </section>
 
       <section aria-labelledby="orders-heading" className="mt-3xl">

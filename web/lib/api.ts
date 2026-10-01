@@ -227,11 +227,13 @@ export function isAccountSuspended(error: unknown): boolean {
   return code === "account_suspended";
 }
 
+export type EnrollmentSource = "purchase" | "manual" | "comp";
+
 export type Enrollment = {
   id: string;
   course_id: string;
   course_slug: string;
-  source: "purchase" | "manual" | "comp";
+  source: EnrollmentSource;
   enrolled_at: string;
 };
 
@@ -855,6 +857,87 @@ export async function suspendAdminUser(
 export async function reinstateAdminUser(id: string): Promise<AdminUserDetail> {
   return apiFetch<AdminUserDetail>(
     `/api/admin/users/${encodeURIComponent(id)}/reinstate/`,
+    { method: "POST" },
+  );
+}
+
+export type EnrollmentStatus = "active" | "revoked";
+
+/** The sources an admin can grant; `purchase` comes only from an order. */
+export type GrantSource = Exclude<EnrollmentSource, "purchase">;
+
+export type AdminEnrollment = {
+  id: string;
+  course: { id: string; title: string; slug: string; status: CourseStatus };
+  source: EnrollmentSource;
+  status: EnrollmentStatus;
+  /** Null unless the source is a purchase. */
+  order_id: string | null;
+  enrolled_at: string;
+  /** Null unless revoked. */
+  revoked_at: string | null;
+  /** Of the course's current lessons. */
+  completed_lesson_count: number;
+  lesson_count: number;
+};
+
+/**
+ * Every enrollment of a user, revoked ones and draft courses included; active
+ * first, then newest. Throws `ApiError` with status 404 for an unknown or
+ * malformed id, 403 for anyone but an admin, and on any other failure.
+ */
+export async function fetchAdminUserEnrollments(
+  userId: string,
+): Promise<AdminEnrollment[]> {
+  return apiFetch<AdminEnrollment[]>(
+    `/api/admin/users/${encodeURIComponent(userId)}/enrollments/`,
+  );
+}
+
+/**
+ * Enrolls a user of any status in any course, drafts included, without
+ * payment. Throws `ApiError` with status 400 and a `FieldErrors` body for an
+ * unknown course (`course_id`), a source other than manual or comp
+ * (`source`), or a course the user already has a row for, revoked or not
+ * (`non_field_errors`); 404 for an unknown user, 403 for anyone but an admin,
+ * and on any other failure.
+ */
+export async function grantAdminEnrollment(
+  userId: string,
+  courseId: string,
+  source: GrantSource,
+): Promise<AdminEnrollment> {
+  return apiFetch<AdminEnrollment>(
+    `/api/admin/users/${encodeURIComponent(userId)}/enrollments/`,
+    { method: "POST", body: JSON.stringify({ course_id: courseId, source }) },
+  );
+}
+
+/**
+ * Refunds nothing. Throws `ApiError` with status 400 and a `FieldErrors` body
+ * (`non_field_errors`) when already revoked, 404 for an unknown id, 403 for
+ * anyone but an admin, and on any other failure.
+ */
+export async function revokeAdminEnrollment(
+  id: string,
+): Promise<AdminEnrollment> {
+  return apiFetch<AdminEnrollment>(
+    `/api/admin/enrollments/${encodeURIComponent(id)}/revoke/`,
+    { method: "POST" },
+  );
+}
+
+/**
+ * Brings the row back with its source, order and enrolled date. Throws
+ * `ApiError` with status 400 and a `FieldErrors` body (`non_field_errors`)
+ * when already active, 404 for an unknown id, 403 for anyone but an admin,
+ * and on any other failure.
+ */
+export async function restoreAdminEnrollment(
+  id: string,
+): Promise<AdminEnrollment> {
+  return apiFetch<AdminEnrollment>(
+    `/api/admin/enrollments/${encodeURIComponent(id)}/restore/`,
     { method: "POST" },
   );
 }

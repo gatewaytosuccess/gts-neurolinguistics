@@ -21,6 +21,24 @@ class ProgressStatus(models.TextChoices):
     COMPLETED = "completed", "Completed"
 
 
+class EnrollmentQuerySet(models.QuerySet):
+    def with_progress(self):
+        """Adds ``lesson_count`` and ``completed_lesson_count``, over the course's current lessons.
+
+        Only the enrolled user's completed lessons count.
+        """
+        lessons = "course__modules__lessons"
+        completed = models.Q(
+            course__modules__lessons__progress__user=models.F("user"),
+            course__modules__lessons__progress__status=ProgressStatus.COMPLETED,
+        )
+        # distinct: the progress join fans each lesson out to every learner's row.
+        return self.annotate(
+            lesson_count=models.Count(lessons, distinct=True),
+            completed_lesson_count=models.Count(lessons, filter=completed, distinct=True),
+        )
+
+
 class Enrollment(UUIDModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="enrollments"
@@ -42,6 +60,8 @@ class Enrollment(UUIDModel):
         max_length=20, choices=EnrollmentStatus.choices, default=EnrollmentStatus.ACTIVE
     )
     revoked_at = models.DateTimeField(null=True, blank=True)
+
+    objects = EnrollmentQuerySet.as_manager()
 
     class Meta(UUIDModel.Meta):
         db_table = "enrollments"
