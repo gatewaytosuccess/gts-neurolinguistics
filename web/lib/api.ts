@@ -809,3 +809,22 @@ export const fetchAdminUser = cache(
   async (id: string): Promise<AdminUserDetail> =>
     apiFetch<AdminUserDetail>(`/api/admin/users/${encodeURIComponent(id)}/`),
 );
+
+/** The roles an admin can give; `instructor` is only ever moved off. */
+export type AssignableRole = Exclude<UserRole, "instructor">;
+
+/**
+ * Changes the role and nothing else. Throws `ApiError` with status 400 and a
+ * `FieldErrors` body when the target is the requester, `admin` is asked for a
+ * user who isn't active, or the role isn't assignable; 404 for an unknown id,
+ * 403 for anyone but an admin, and on any other failure.
+ */
+export async function updateAdminUserRole(
+  id: string,
+  role: AssignableRole,
+): Promise<AdminUserDetail> {
+  return apiFetch<AdminUserDetail>(
+    `/api/admin/users/${encodeURIComponent(id)}/`,
+    { method: "PATCH", body: JSON.stringify({ role }) },
+  );
+}
