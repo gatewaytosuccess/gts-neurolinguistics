@@ -15,6 +15,7 @@ import { ROLE_LABELS } from "../_lib/format";
 import {
   isAssignableRole,
   roleChangeEffect,
+  SELF_HINT_ID,
   type RoleChangeState,
 } from "../_lib/role-change";
 
@@ -105,7 +106,7 @@ export function RoleControl({
           {pending ? "Saving…" : "Save"}
         </button>
         {isSelf ? (
-          <p className="type-caption text-meta-text">
+          <p id={SELF_HINT_ID} className="type-caption text-meta-text">
             You can&rsquo;t change your own role or status.
           </p>
         ) : (

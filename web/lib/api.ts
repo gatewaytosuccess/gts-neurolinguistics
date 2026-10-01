@@ -828,3 +828,33 @@ export async function updateAdminUserRole(
     { method: "PATCH", body: JSON.stringify({ role }) },
   );
 }
+
+/**
+ * Suspends an active or deleted user; their enrollments, orders and reviews
+ * are kept. Throws `ApiError` with status 400 and a `FieldErrors` body for a
+ * blank reason (`reason`) or a refused target (`non_field_errors`: yourself,
+ * an admin, or a user already suspended), 404 for an unknown id, 403 for
+ * anyone but an admin, and on any other failure.
+ */
+export async function suspendAdminUser(
+  id: string,
+  reason: string,
+): Promise<AdminUserDetail> {
+  return apiFetch<AdminUserDetail>(
+    `/api/admin/users/${encodeURIComponent(id)}/suspend/`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+}
+
+/**
+ * Lifts a suspension: the user becomes active, or deleted when they have no
+ * Clerk identity. Throws `ApiError` with status 400 and a `FieldErrors` body
+ * (`non_field_errors`) for yourself or a user who isn't suspended, 404 for an
+ * unknown id, 403 for anyone but an admin, and on any other failure.
+ */
+export async function reinstateAdminUser(id: string): Promise<AdminUserDetail> {
+  return apiFetch<AdminUserDetail>(
+    `/api/admin/users/${encodeURIComponent(id)}/reinstate/`,
+    { method: "POST" },
+  );
+}

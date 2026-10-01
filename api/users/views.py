@@ -18,7 +18,9 @@ from .serializers import (
     AdminUserDetailSerializer,
     AdminUserFiltersSerializer,
     AdminUserListSerializer,
+    AdminUserReinstateSerializer,
     AdminUserRoleSerializer,
+    AdminUserSuspendSerializer,
     UserSerializer,
 )
 
@@ -116,5 +118,60 @@ class AdminUserDetailView(generics.RetrieveAPIView):
             user.pk,
             old_role,
             user.role,
+        )
+        return Response(self.get_serializer(self.get_object()).data)
+
+
+class AdminUserSuspendView(generics.GenericAPIView):
+    """Takes ``{"reason": ...}``. Active and deleted users can be suspended.
+
+    Answers 400 for a blank or missing reason, the requester, an admin, or a
+    user who is already suspended. Returns the detail payload.
+    """
+
+    serializer_class = AdminUserDetailSerializer
+    permission_classes = [IsAdmin]
+    queryset = AdminUserDetailView.queryset
+
+    def post(self, request, pk):
+        with transaction.atomic():
+            # Locked so a concurrent role change can't slip an admin past the check.
+            user = get_object_or_404(User.objects.select_for_update(), pk=pk)
+            serializer = AdminUserSuspendSerializer(
+                data=request.data, context={"request": request, "user": user}
+            )
+            serializer.is_valid(raise_exception=True)
+            reason = serializer.validated_data["reason"]
+            user.suspend(reason)
+        logger.info("Admin %s suspended user %s: %s", request.user.pk, user.pk, reason)
+        return Response(self.get_serializer(self.get_object()).data)
+
+
+class AdminUserReinstateView(generics.GenericAPIView):
+    """Goes through ``User.reinstate()``: a user with no Clerk identity becomes ``deleted``.
+
+    Answers 400 for the requester or a user who isn't suspended. Returns the
+    detail payload.
+    """
+
+    serializer_class = AdminUserDetailSerializer
+    permission_classes = [IsAdmin]
+    queryset = AdminUserDetailView.queryset
+
+    def post(self, request, pk):
+        with transaction.atomic():
+            user = get_object_or_404(User.objects.select_for_update(), pk=pk)
+            serializer = AdminUserReinstateSerializer(
+                data=request.data, context={"request": request, "user": user}
+            )
+            serializer.is_valid(raise_exception=True)
+            reason = user.suspension_reason
+            user.reinstate()
+        logger.info(
+            "Admin %s reinstated user %s as %s; they were suspended for: %s",
+            request.user.pk,
+            user.pk,
+            user.status,
+            reason,
         )
         return Response(self.get_serializer(self.get_object()).data)

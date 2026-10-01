@@ -135,7 +135,7 @@ class AdminUserRoleSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         user = self.instance
         if user.pk == self.context["request"].user.pk:
-            raise serializers.ValidationError("You can't change your own role.")
+            raise serializers.ValidationError("You can't change your own role or status.")
         if attrs["role"] == Role.ADMIN and not user.is_admin and not user.is_active:
             raise serializers.ValidationError(
                 f"Only an active user can be made an admin. This user is {user.status}."
@@ -146,3 +146,37 @@ class AdminUserRoleSerializer(serializers.ModelSerializer):
         instance.role = validated_data["role"]
         instance.save(update_fields=["role", "updated_at"])
         return instance
+
+
+class AdminUserSuspendSerializer(serializers.Serializer):
+    """Expects the locked target as ``user`` and the request as ``request`` in its context."""
+
+    reason = serializers.CharField(
+        max_length=500,
+        error_messages={
+            "required": "Give a reason for suspending this user.",
+            "blank": "Give a reason for suspending this user.",
+        },
+    )
+
+    def validate(self, attrs):
+        user = self.context["user"]
+        if user.pk == self.context["request"].user.pk:
+            raise serializers.ValidationError("You can't change your own role or status.")
+        if user.is_admin:
+            raise serializers.ValidationError("An admin can't be suspended. Demote them first.")
+        if user.status == UserStatus.SUSPENDED:
+            raise serializers.ValidationError("This user is already suspended.")
+        return attrs
+
+
+class AdminUserReinstateSerializer(serializers.Serializer):
+    """Takes no fields. Expects the locked target as ``user`` and the request as ``request``."""
+
+    def validate(self, attrs):
+        user = self.context["user"]
+        if user.pk == self.context["request"].user.pk:
+            raise serializers.ValidationError("You can't change your own role or status.")
+        if user.status != UserStatus.SUSPENDED:
+            raise serializers.ValidationError("This user isn't suspended.")
+        return attrs

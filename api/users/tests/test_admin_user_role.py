@@ -176,7 +176,7 @@ class TestRefusals:
     def test_refuses_a_change_to_your_own_role(self, client, admin, new_role):
         body = refusal(client, admin.pk, {"role": new_role})
 
-        assert body["non_field_errors"] == ["You can't change your own role."]
+        assert body["non_field_errors"] == ["You can't change your own role or status."]
         admin.refresh_from_db()
         assert admin.role == Role.ADMIN
 

@@ -7,6 +7,9 @@ export type RoleChangeState = {
   confirming?: AssignableRole;
 };
 
+// The suspension controls point at this line too, rather than repeating it.
+export const SELF_HINT_ID = "access-self-hint";
+
 export function isAssignableRole(value: unknown): value is AssignableRole {
   return value === "learner" || value === "admin";
 }
