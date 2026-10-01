@@ -20,15 +20,11 @@ import { ListPagination } from "../_components/list-pagination";
 import { firstValue, parsePage } from "../_lib/list-params";
 import { requireAdmin } from "../_lib/require-admin";
 import { STATUS_LABELS, StatusBadge } from "./_components/status-badge";
+import { UserAvatar } from "./_components/user-avatar";
+import { formatDate, ROLE_LABELS } from "./_lib/format";
 
 export const metadata: Metadata = {
   title: "Users · Admin",
-};
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  learner: "Learner",
-  instructor: "Instructor",
-  admin: "Admin",
 };
 
 const SORT_LABELS: Record<AdminUserSort, string> = {
@@ -228,12 +224,6 @@ function ListControls({ filters }: { filters: Filters }) {
   );
 }
 
-const dateFormat = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-});
-
 function UserTable({ users }: { users: AdminUserSummary[] }) {
   const headerClassName = "type-label-md px-sm py-sm text-accent";
   const numericHeaderClassName = `${headerClassName} text-right`;
@@ -267,7 +257,7 @@ function UserTable({ users }: { users: AdminUserSummary[] }) {
             <tr key={user.id} className="border-b border-rule align-top">
               <th scope="row" className="px-sm py-sm font-normal">
                 <div className="flex items-start gap-sm">
-                  <Avatar user={user} />
+                  <UserAvatar user={user} />
                   <div className="min-w-0">
                     <Link
                       href={`/admin/users/${user.id}`}
@@ -294,7 +284,7 @@ function UserTable({ users }: { users: AdminUserSummary[] }) {
               </td>
               <td className={`${numericCellClassName} whitespace-nowrap`}>
                 <time dateTime={user.created_at}>
-                  {dateFormat.format(new Date(user.created_at))}
+                  {formatDate(user.created_at)}
                 </time>
               </td>
             </tr>
@@ -302,26 +292,5 @@ function UserTable({ users }: { users: AdminUserSummary[] }) {
         </tbody>
       </table>
     </div>
-  );
-}
-
-function Avatar({ user }: { user: AdminUserSummary }) {
-  const className = "size-[32px] shrink-0 rounded-full bg-paper-dim";
-
-  if (!user.avatar_url) {
-    return (
-      <span
-        aria-hidden
-        className={`${className} type-label-md flex items-center justify-center text-accent`}
-      >
-        {(user.name || user.email).charAt(0).toUpperCase()}
-      </span>
-    );
-  }
-
-  return (
-    // Clerk's image host isn't allowlisted for next/image.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={user.avatar_url} alt="" className={`${className} object-cover`} />
   );
 }

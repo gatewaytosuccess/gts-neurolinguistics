@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { Stars } from "@/components/stars";
 import type { CourseReview, Paginated } from "@/lib/api";
 import { formatMonthYear } from "@/lib/format";
-
-import { Stars } from "./stars";
 
 const REVIEWS_PAGE_SIZE = 10;
 

@@ -764,3 +764,48 @@ export async function fetchAdminUsers({
   const query = params.size ? `?${params}` : "";
   return apiFetch<Paginated<AdminUserSummary>>(`/api/admin/users/${query}`);
 }
+
+export type OrderStatus = "pending" | "paid" | "refunded" | "failed";
+
+export type AdminUserOrder = {
+  id: string;
+  created_at: string;
+  status: OrderStatus;
+  total_cents: number;
+  items: { title: string; unit_price_cents: number }[];
+};
+
+export type AdminUserReview = {
+  id: string;
+  rating: number;
+  body: string;
+  status: ReviewStatus;
+  created_at: string;
+  course: { id: string; title: string; slug: string; status: CourseStatus };
+};
+
+export type AdminUserDetail = Omit<
+  AdminUserSummary,
+  "active_enrollment_count"
+> & {
+  /** Null unless suspended. */
+  suspended_at: string | null;
+  /** Blank unless suspended. */
+  suspension_reason: string;
+  /** False once the person has deleted their Clerk login. */
+  has_clerk_identity: boolean;
+  /** Newest first. */
+  orders: AdminUserOrder[];
+  /** Newest first, hidden ones included. */
+  reviews: AdminUserReview[];
+};
+
+/**
+ * Any user, deleted ones included. Throws `ApiError` with status 404 for an
+ * unknown or malformed id, 403 for anyone but an admin, and on any other
+ * failure. Deduplicated per request.
+ */
+export const fetchAdminUser = cache(
+  async (id: string): Promise<AdminUserDetail> =>
+    apiFetch<AdminUserDetail>(`/api/admin/users/${encodeURIComponent(id)}/`),
+);

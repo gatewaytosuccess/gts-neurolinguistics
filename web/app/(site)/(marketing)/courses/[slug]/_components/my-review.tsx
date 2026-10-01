@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import { Stars } from "@/components/stars";
 import type { MyReview } from "@/lib/api";
 
 import {
@@ -10,7 +11,6 @@ import {
   type DeleteReviewState,
   type ReviewFormState,
 } from "../_lib/review";
-import { Stars } from "./stars";
 
 type SaveAction = (
   state: ReviewFormState,
