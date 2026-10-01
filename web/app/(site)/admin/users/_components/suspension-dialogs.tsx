@@ -28,11 +28,14 @@ export function SuspendDialog({
   name,
   suspend,
   disabledReason,
+  disabledBy,
 }: {
   name: string;
   suspend: SuspendAction;
   /** Set when the user can't be suspended; the trigger is disabled with this hint. */
   disabledReason?: string;
+  /** The id of a hint elsewhere on the page; the trigger is disabled and described by it. */
+  disabledBy?: string;
 }) {
   const { dialogRef, opened, open, close } = useDialog();
   const headingId = useId();
@@ -43,6 +46,7 @@ export function SuspendDialog({
       className={`${dangerClassName} disabled:cursor-not-allowed disabled:border-border-strong disabled:text-meta-text disabled:hover:bg-paper-raised`}
       onOpen={open}
       disabledReason={disabledReason}
+      disabledBy={disabledBy}
     >
       <Modal dialogRef={dialogRef} headingId={headingId}>
         {/* Keyed by opening, so a reopened dialog starts blank. */}
@@ -137,13 +141,14 @@ export function ReinstateDialog({
   name,
   returnsToDeleted,
   reinstate,
-  disabledReason,
+  disabledBy,
 }: {
   name: string;
   /** The user has no Clerk identity, so reinstating leaves them deleted. */
   returnsToDeleted: boolean;
   reinstate: ReinstateAction;
-  disabledReason?: string;
+  /** The id of a hint elsewhere on the page; the trigger is disabled and described by it. */
+  disabledBy?: string;
 }) {
   const { dialogRef, opened, open, close } = useDialog();
   const headingId = useId();
@@ -153,7 +158,7 @@ export function ReinstateDialog({
       label="Reinstate"
       className="button-secondary"
       onOpen={open}
-      disabledReason={disabledReason}
+      disabledBy={disabledBy}
     >
       <Modal dialogRef={dialogRef} headingId={headingId}>
         <ReinstateForm
@@ -237,23 +242,26 @@ function Trigger({
   className,
   onOpen,
   disabledReason,
+  disabledBy,
   children,
 }: {
   label: string;
   className: string;
   onOpen: () => void;
   disabledReason?: string;
+  disabledBy?: string;
   children: ReactNode;
 }) {
   const hintId = useId();
+  const disabled = Boolean(disabledReason || disabledBy);
 
   return (
     <div className="mt-lg flex flex-wrap items-center gap-md">
       <button
         type="button"
         onClick={onOpen}
-        disabled={Boolean(disabledReason)}
-        aria-describedby={disabledReason ? hintId : undefined}
+        disabled={disabled}
+        aria-describedby={disabledReason ? hintId : disabledBy}
         className={className}
       >
         {label}
@@ -263,7 +271,7 @@ function Trigger({
           {disabledReason}
         </p>
       )}
-      {!disabledReason && children}
+      {!disabled && children}
     </div>
   );
 }

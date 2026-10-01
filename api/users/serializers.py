@@ -135,7 +135,7 @@ class AdminUserRoleSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         user = self.instance
         if user.pk == self.context["request"].user.pk:
-            raise serializers.ValidationError("You can't change your own role.")
+            raise serializers.ValidationError("You can't change your own role or status.")
         if attrs["role"] == Role.ADMIN and not user.is_admin and not user.is_active:
             raise serializers.ValidationError(
                 f"Only an active user can be made an admin. This user is {user.status}."

@@ -7,7 +7,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from commerce.models import Order, OrderItem
 from enrollments.models import EnrollmentStatus
@@ -123,18 +122,16 @@ class AdminUserDetailView(generics.RetrieveAPIView):
         return Response(self.get_serializer(self.get_object()).data)
 
 
-def admin_user_detail_data(pk):
-    return AdminUserDetailSerializer(AdminUserDetailView.queryset.get(pk=pk)).data
-
-
-class AdminUserSuspendView(APIView):
+class AdminUserSuspendView(generics.GenericAPIView):
     """Takes ``{"reason": ...}``. Active and deleted users can be suspended.
 
     Answers 400 for a blank or missing reason, the requester, an admin, or a
     user who is already suspended. Returns the detail payload.
     """
 
+    serializer_class = AdminUserDetailSerializer
     permission_classes = [IsAdmin]
+    queryset = AdminUserDetailView.queryset
 
     def post(self, request, pk):
         with transaction.atomic():
@@ -146,18 +143,20 @@ class AdminUserSuspendView(APIView):
             serializer.is_valid(raise_exception=True)
             reason = serializer.validated_data["reason"]
             user.suspend(reason)
-        logger.info("Admin %s suspended user %s: %s", request.user.id, user.id, reason)
-        return Response(admin_user_detail_data(user.pk))
+        logger.info("Admin %s suspended user %s: %s", request.user.pk, user.pk, reason)
+        return Response(self.get_serializer(self.get_object()).data)
 
 
-class AdminUserReinstateView(APIView):
+class AdminUserReinstateView(generics.GenericAPIView):
     """Goes through ``User.reinstate()``: a user with no Clerk identity becomes ``deleted``.
 
     Answers 400 for the requester or a user who isn't suspended. Returns the
     detail payload.
     """
 
+    serializer_class = AdminUserDetailSerializer
     permission_classes = [IsAdmin]
+    queryset = AdminUserDetailView.queryset
 
     def post(self, request, pk):
         with transaction.atomic():
@@ -170,9 +169,9 @@ class AdminUserReinstateView(APIView):
             user.reinstate()
         logger.info(
             "Admin %s reinstated user %s as %s; they were suspended for: %s",
-            request.user.id,
-            user.id,
+            request.user.pk,
+            user.pk,
             user.status,
             reason,
         )
-        return Response(admin_user_detail_data(user.pk))
+        return Response(self.get_serializer(self.get_object()).data)

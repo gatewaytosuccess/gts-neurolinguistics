@@ -72,8 +72,8 @@ export default async function AdminUserPage({
         <h2 id="access-heading" className="type-headline-sm">
           Access
         </h2>
-        <Access user={user} />
-        <SuspensionControl user={user} />
+        <Access user={user} isSelf={user.id === viewerId} />
+        <SuspensionControl user={user} isSelf={user.id === viewerId} />
       </section>
 
       <section aria-labelledby="orders-heading" className="mt-3xl">
