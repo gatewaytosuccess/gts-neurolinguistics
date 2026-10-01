@@ -108,3 +108,41 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
 
     def get_has_clerk_identity(self, user):
         return bool(user.clerk_user_id)
+
+
+class AdminUserRoleSerializer(serializers.ModelSerializer):
+    """Writes ``role`` and nothing else; any other field sent is ignored.
+
+    Refuses ``instructor``, the requester's own row, and making a user who
+    isn't active an admin. Expects ``request`` in the context, and an instance
+    locked for update so the status it checks can't change before the save.
+    """
+
+    role = serializers.ChoiceField(choices=Role.choices)
+
+    class Meta:
+        model = User
+        fields = ["role"]
+
+    def validate_role(self, value):
+        # The role grants nothing yet.
+        if value == Role.INSTRUCTOR:
+            raise serializers.ValidationError(
+                "Nobody can be made an instructor. Choose learner or admin."
+            )
+        return value
+
+    def validate(self, attrs):
+        user = self.instance
+        if user.pk == self.context["request"].user.pk:
+            raise serializers.ValidationError("You can't change your own role.")
+        if attrs["role"] == Role.ADMIN and not user.is_admin and not user.is_active:
+            raise serializers.ValidationError(
+                f"Only an active user can be made an admin. This user is {user.status}."
+            )
+        return attrs
+
+    def update(self, instance, validated_data):
+        instance.role = validated_data["role"]
+        instance.save(update_fields=["role", "updated_at"])
+        return instance

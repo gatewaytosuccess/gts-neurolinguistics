@@ -1,5 +1,9 @@
+import logging
+
+from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 from django.db.models.functions import Lower
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -14,8 +18,11 @@ from .serializers import (
     AdminUserDetailSerializer,
     AdminUserFiltersSerializer,
     AdminUserListSerializer,
+    AdminUserRoleSerializer,
     UserSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @api_view(["GET"])
@@ -70,7 +77,11 @@ class AdminUserListView(generics.ListAPIView):
 
 
 class AdminUserDetailView(generics.RetrieveAPIView):
-    """Any user, deleted ones included, with every order and review, newest first."""
+    """Any user, deleted ones included, with every order and review, newest first.
+
+    PATCH changes the role and nothing else, answering with the same payload;
+    see ``AdminUserRoleSerializer`` for what it refuses.
+    """
 
     serializer_class = AdminUserDetailSerializer
     permission_classes = [IsAdmin]
@@ -88,3 +99,22 @@ class AdminUserDetailView(generics.RetrieveAPIView):
             "reviews", queryset=Review.objects.select_related("course").order_by("-created_at")
         ),
     )
+
+    def patch(self, request, *args, **kwargs):
+        # Locked so a suspension can't land between the status check and the save.
+        with transaction.atomic():
+            user = get_object_or_404(User.objects.select_for_update(), pk=kwargs["pk"])
+            old_role = user.role
+            serializer = AdminUserRoleSerializer(
+                user, data=request.data, context={"request": request}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        logger.info(
+            "Admin %s changed the role of user %s from %s to %s.",
+            request.user.pk,
+            user.pk,
+            old_role,
+            user.role,
+        )
+        return Response(self.get_serializer(self.get_object()).data)

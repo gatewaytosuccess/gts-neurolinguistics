@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import {
   ApiError,
   fetchAdminUser,
+  fetchCurrentUser,
   type AdminUserDetail,
   type AdminUserOrder,
   type AdminUserReview,
@@ -14,9 +15,11 @@ import { Stars } from "@/components/stars";
 import { formatPrice } from "@/lib/format";
 
 import { requireAdmin } from "../../_lib/require-admin";
+import { RoleControl } from "../_components/role-control";
 import { StatusBadge } from "../_components/status-badge";
 import { UserAvatar } from "../_components/user-avatar";
-import { formatDate, ROLE_LABELS } from "../_lib/format";
+import { formatDate } from "../_lib/format";
+import { changeUserRole } from "../_lib/role-actions";
 
 export async function generateMetadata({
   params,
@@ -43,8 +46,10 @@ export default async function AdminUserPage({
   const { id } = await params;
 
   let user: AdminUserDetail;
+  let viewerId: string | undefined;
   try {
     user = await fetchAdminUser(id);
+    viewerId = (await fetchCurrentUser())?.id;
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
     return (
@@ -66,7 +71,7 @@ export default async function AdminUserPage({
         <h2 id="access-heading" className="type-headline-sm">
           Access
         </h2>
-        <Access user={user} />
+        <Access user={user} isSelf={user.id === viewerId} />
       </section>
 
       <section aria-labelledby="orders-heading" className="mt-3xl">
@@ -133,12 +138,23 @@ function Header({ user }: { user: AdminUserDetail }) {
   );
 }
 
-function Access({ user }: { user: AdminUserDetail }) {
+function Access({ user, isSelf }: { user: AdminUserDetail; isSelf: boolean }) {
   return (
     <dl className="mt-md grid gap-x-md gap-y-xs sm:grid-cols-[max-content_1fr] sm:gap-y-md">
       <div className="contents">
         <dt className="type-label-caps text-meta-text">Role</dt>
-        <dd className="type-body-md">{ROLE_LABELS[user.role]}</dd>
+        <dd>
+          <RoleControl
+            // Remounts once a change lands, so the select starts from the new role.
+            key={user.role}
+            userId={user.id}
+            name={user.name || user.email}
+            role={user.role}
+            status={user.status}
+            isSelf={isSelf}
+            action={changeUserRole.bind(null, user.id, user.role)}
+          />
+        </dd>
       </div>
       {user.status === "suspended" && (
         <>
