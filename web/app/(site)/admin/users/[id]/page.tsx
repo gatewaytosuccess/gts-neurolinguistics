@@ -17,6 +17,7 @@ import { formatPrice } from "@/lib/format";
 import { requireAdmin } from "../../_lib/require-admin";
 import { RoleControl } from "../_components/role-control";
 import { StatusBadge } from "../_components/status-badge";
+import { SuspensionControl } from "../_components/suspension-control";
 import { UserAvatar } from "../_components/user-avatar";
 import { formatDate } from "../_lib/format";
 import { changeUserRole } from "../_lib/role-actions";
@@ -71,7 +72,8 @@ export default async function AdminUserPage({
         <h2 id="access-heading" className="type-headline-sm">
           Access
         </h2>
-        <Access user={user} isSelf={user.id === viewerId} />
+        <Access user={user} />
+        <SuspensionControl user={user} />
       </section>
 
       <section aria-labelledby="orders-heading" className="mt-3xl">
