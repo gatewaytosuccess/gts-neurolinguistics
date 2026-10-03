@@ -1,7 +1,16 @@
 import logging
 
 from django.db import transaction
-from django.db.models import Case, IntegerField, Value, When
+from django.db.models import (
+    BooleanField,
+    Case,
+    ExpressionWrapper,
+    IntegerField,
+    Prefetch,
+    Q,
+    Value,
+    When,
+)
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
@@ -11,16 +20,17 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
-from courses.models import Lesson
+from courses.models import Lesson, Module
 from users.models import User
 from users.permissions import IsAdmin
 
-from .access import is_locked, viewable_course
-from .models import Enrollment, EnrollmentStatus
+from .access import Access, is_locked, viewable_course
+from .models import Enrollment, EnrollmentStatus, LessonProgress, ProgressStatus
 from .serializers import (
     AdminEnrollmentGrantSerializer,
     AdminEnrollmentSerializer,
     EnrollmentSerializer,
+    OutlineModuleSerializer,
     ViewerCourseSerializer,
     ViewerLessonSerializer,
 )
@@ -41,6 +51,51 @@ class MyEnrollmentListView(generics.ListAPIView):
         return Enrollment.objects.filter(
             user=self.request.user, status=EnrollmentStatus.ACTIVE
         ).select_related("course")
+
+
+class LessonOutlineView(APIView):
+    """A course's whole curriculum in order, with ``locked`` and ``completed`` on each lesson.
+
+    Authentication is optional, but a suspended account still gets 401. 404 for
+    an unknown course, or a draft the requester can't see. ``completed`` and
+    ``completed_lesson_count`` come from the requester's own progress, and only
+    while enrolled: an admin or a revoked learner sees nothing completed.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        course, access = viewable_course(request.user, slug)
+        # Bodies can be long, and only whether there is one is needed.
+        lessons = (
+            Lesson.objects.defer("body")
+            .annotate(has_body=ExpressionWrapper(~Q(body=""), output_field=BooleanField()))
+            .order_by("position")
+        )
+        modules = list(
+            Module.objects.filter(course=course)
+            .prefetch_related(Prefetch("lessons", queryset=lessons))
+            .order_by("position")
+        )
+        completed_ids = set()
+        if access == Access.ENROLLED:
+            completed_ids = set(
+                LessonProgress.objects.filter(
+                    user=request.user,
+                    lesson__module__course=course,
+                    status=ProgressStatus.COMPLETED,
+                ).values_list("lesson_id", flat=True)
+            )
+        context = {"access": access, "completed_ids": completed_ids}
+        return Response(
+            {
+                "course": ViewerCourseSerializer(course).data,
+                "access": access,
+                "lesson_count": sum(len(module.lessons.all()) for module in modules),
+                "completed_lesson_count": len(completed_ids),
+                "modules": OutlineModuleSerializer(modules, many=True, context=context).data,
+            }
+        )
 
 
 class LessonViewerView(APIView):

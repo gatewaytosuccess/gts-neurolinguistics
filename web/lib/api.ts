@@ -263,6 +263,34 @@ export type ViewerLesson = {
   access: ViewerAccess;
 };
 
+export type OutlineLesson = Pick<
+  CourseLesson,
+  "id" | "title" | "duration_seconds" | "is_preview" | "kinds"
+> & {
+  /** Opening it shows the locked panel instead of the content. */
+  locked: boolean;
+  /** Always `false` unless the caller is enrolled. */
+  completed: boolean;
+};
+
+export type OutlineModule = {
+  id: string;
+  title: string;
+  position: number;
+  lessons: OutlineLesson[];
+};
+
+/** A course's whole curriculum as the lesson viewer's sidebar shows it. */
+export type ViewerOutline = {
+  course: ViewerCourse;
+  access: ViewerAccess;
+  lesson_count: number;
+  /** The caller's own completed lessons; `0` unless enrolled. */
+  completed_lesson_count: number;
+  /** In curriculum order, empty modules included. */
+  modules: OutlineModule[];
+};
+
 /**
  * The course of a 403 refusing a locked lesson; `null` for any other error.
  */
@@ -360,6 +388,17 @@ export const fetchViewerLesson = cache(
     apiFetch<ViewerLesson>(
       `/api/learn/${encodeURIComponent(slug)}/lessons/${encodeURIComponent(lessonId)}/`,
     ),
+);
+
+/**
+ * The lesson viewer's outline of a course; signing in is optional. Throws
+ * `ApiError` with status 404 for an unknown course or a draft the caller
+ * can't see, and on any other failure; a suspended account's passes
+ * `isAccountSuspended`. Deduplicated per request.
+ */
+export const fetchViewerOutline = cache(
+  async (slug: string): Promise<ViewerOutline> =>
+    apiFetch<ViewerOutline>(`/api/learn/${encodeURIComponent(slug)}/`),
 );
 
 export const COURSE_SORTS = ["newest", "price_asc", "price_desc"] as const;
