@@ -109,8 +109,24 @@ The signed-in learner's home: the courses they are enrolled in, their progress t
 _Avoid_: My learning, portal, home
 
 **Lesson viewer**:
-Where an enrolled learner works through a course — modules, lessons, playback, and marking progress complete.
+Where a learner works through a course they are enrolled in — modules, lessons, playback, and marking lessons complete — and where anyone, signed in or not, opens a published course's preview lessons. Admins can open every lesson of every course, drafts included, without being enrolled.
 _Avoid_: Lesson dashboard, course player, learning page
+
+**Locked lesson**:
+A lesson the person viewing it can see in the curriculum but not open, because they are not enrolled and it is not a preview lesson.
+_Avoid_: Paywalled, gated, premium
+
+**Progress**:
+A learner's record of which lessons of a course they have opened and completed, and where they stopped in each video. Kept only for enrolled learners, and kept through a revoke, so a restored enrollment picks up where it left off.
+_Avoid_: History, activity
+
+**Complete**:
+A lesson the learner has finished: they marked it so, or watched its video to the end. Only the learner undoes it; rewatching or an admin changing the lesson does not. A course is complete when every one of its current lessons is, so a lesson added later makes it incomplete again.
+_Avoid_: Done, finished, watched
+
+**Continue**:
+Going back into a course at the lesson most recently opened, or the one after it if that one is complete.
+_Avoid_: Resume (in copy), start
 
 **Note**:
 Something a learner writes for themselves while working through a lesson. Taken only in the lesson viewer, and read back from either the viewer or their dashboard.
