@@ -6,6 +6,7 @@ export function ViewerHeader({
   courseTitle,
   editHref,
   viewingAsAdmin,
+  progress,
   signedIn,
   onOpenCurriculum,
 }: {
@@ -16,6 +17,8 @@ export function ViewerHeader({
   editHref?: string;
   /** An admin who isn't enrolled, so nothing they do is recorded. */
   viewingAsAdmin: boolean;
+  /** Enrolled learners only. */
+  progress?: { completed: number; total: number };
   signedIn: boolean;
   /** Opens the drawer below `lg`; missing when there's no curriculum to show. */
   onOpenCurriculum?: () => void;
@@ -53,6 +56,7 @@ export function ViewerHeader({
           </button>
         )}
         <p className="type-label-lg min-w-0 flex-1 truncate">{courseTitle}</p>
+        {progress && progress.total > 0 && <ProgressBar {...progress} />}
 
         {editHref && (
           <Link
@@ -82,5 +86,48 @@ export function ViewerHeader({
         </p>
       )}
     </header>
+  );
+}
+
+function ProgressBar({
+  completed,
+  total,
+}: {
+  completed: number;
+  total: number;
+}) {
+  const done = completed >= total;
+  return (
+    <div className="flex shrink-0 items-center gap-sm">
+      <span
+        className={`type-caption whitespace-nowrap tabular-nums ${
+          done
+            ? "text-dark-success"
+            : "hidden text-dark-on-surface-meta sm:inline"
+        }`}
+      >
+        {done ? "Course complete" : `${completed} of ${total} lessons`}
+      </span>
+      <span
+        role="progressbar"
+        aria-label="Course progress"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={completed}
+        aria-valuetext={
+          done ? "Course complete" : `${completed} of ${total} lessons complete`
+        }
+        className={`h-[6px] w-16 overflow-hidden rounded-full bg-dark-rule sm:w-32 ${
+          done ? "hidden sm:block" : ""
+        }`}
+      >
+        <span
+          className={`block h-full rounded-full transition-[width] duration-300 ${
+            done ? "bg-dark-success" : "bg-dark-tertiary"
+          }`}
+          style={{ width: `${(completed / total) * 100}%` }}
+        />
+      </span>
+    </div>
   );
 }

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ViewerOutline } from "@/lib/api";
 
 import { CurriculumNav } from "./curriculum-nav";
+import { OutlineContext } from "./outline-context";
 import { ViewerHeader } from "./viewer-header";
 
 // Tailwind's `lg`, where the sidebar stops being a drawer.
@@ -75,6 +76,14 @@ export function ViewerShell({
             : undefined
         }
         viewingAsAdmin={outline?.access === "admin"}
+        progress={
+          outline?.access === "enrolled"
+            ? {
+                completed: outline.completed_lesson_count,
+                total: outline.lesson_count,
+              }
+            : undefined
+        }
         signedIn={signedIn}
         onOpenCurriculum={
           outline ? () => drawerRef.current?.showModal() : undefined
@@ -95,7 +104,9 @@ export function ViewerShell({
             </div>
           </aside>
         )}
-        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <OutlineContext value={outline}>{children}</OutlineContext>
+        </div>
       </div>
 
       {outline && (
