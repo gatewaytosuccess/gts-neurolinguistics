@@ -7,6 +7,7 @@ export function ViewerHeader({
   editHref,
   viewingAsAdmin,
   signedIn,
+  onOpenCurriculum,
 }: {
   slug: string;
   /** Missing when the API couldn't say. */
@@ -16,6 +17,8 @@ export function ViewerHeader({
   /** An admin who isn't enrolled, so nothing they do is recorded. */
   viewingAsAdmin: boolean;
   signedIn: boolean;
+  /** Opens the drawer below `lg`; missing when there's no curriculum to show. */
+  onOpenCurriculum?: () => void;
 }) {
   return (
     <header className="border-b border-dark-rule">
@@ -27,6 +30,28 @@ export function ViewerHeader({
         >
           &larr;
         </Link>
+        {onOpenCurriculum && (
+          <button
+            type="button"
+            onClick={onOpenCurriculum}
+            aria-haspopup="dialog"
+            aria-label="Open the curriculum"
+            className="-mx-xs px-xs py-xs text-dark-primary hover:text-dark-primary-strong lg:hidden"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              width={18}
+              height={18}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              aria-hidden
+            >
+              <path d="M2.5 4h11M2.5 8h11M2.5 12h11" />
+            </svg>
+          </button>
+        )}
         <p className="type-label-lg min-w-0 flex-1 truncate">{courseTitle}</p>
 
         {editHref && (

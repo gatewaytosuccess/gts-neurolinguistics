@@ -102,6 +102,10 @@ enrollments: grant those in Django admin.
 - `POST /api/admin/lessons/<id>/uploads/` — a presigned POST for a new `video` (MP4, up to 2 GB)
   or `slides` (PDF, up to 100 MB), by `kind`; `PATCH` its `video_key` or `slides_key` onto the
   lesson to save it, or a blank key to remove it; admins only
+- `GET /api/learn/<slug>/` — a course's outline for the lesson viewer: every module and lesson in
+  order, each lesson `locked` or not and `completed` or not, the caller's `access` and their
+  completed and total lesson counts; signing in is optional. Only an enrolled caller sees anything
+  completed, and a visitor gets 404 for a draft course
 - `GET /api/learn/<slug>/lessons/<id>/` — a lesson for the lesson viewer, with presigned URLs that
   expire after four hours, the previous and next lesson ids and the caller's `access`
   (`enrolled`, `admin` or `visitor`); signing in is optional. A locked lesson answers 403 with

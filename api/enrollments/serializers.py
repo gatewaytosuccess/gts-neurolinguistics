@@ -1,8 +1,10 @@
 from rest_framework import serializers
 
 from courses import lesson_files
-from courses.models import Course, Lesson
+from courses.models import Course, Lesson, Module
+from courses.serializers import PublicLessonSerializer
 
+from .access import is_locked
 from .models import Enrollment, EnrollmentSource, EnrollmentStatus
 
 
@@ -78,6 +80,37 @@ class ViewerCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ["id", "title", "slug"]
+        read_only_fields = fields
+
+
+class OutlineLessonSerializer(PublicLessonSerializer):
+    """Expects ``access`` and ``completed_ids`` in its context.
+
+    ``completed_ids`` must hold only the requester's own completed lessons.
+    """
+
+    locked = serializers.SerializerMethodField()
+    completed = serializers.SerializerMethodField()
+
+    class Meta(PublicLessonSerializer.Meta):
+        fields = ["id", "title", "duration_seconds", "is_preview", "kinds", "locked", "completed"]
+        read_only_fields = fields
+
+    def get_locked(self, lesson):
+        return is_locked(lesson, self.context["access"])
+
+    def get_completed(self, lesson):
+        return lesson.pk in self.context["completed_ids"]
+
+
+class OutlineModuleSerializer(serializers.ModelSerializer):
+    """Expects lessons prefetched the way ``PublicLessonSerializer`` expects them."""
+
+    lessons = OutlineLessonSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Module
+        fields = ["id", "title", "position", "lessons"]
         read_only_fields = fields
 
 
