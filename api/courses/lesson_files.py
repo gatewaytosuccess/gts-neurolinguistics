@@ -22,6 +22,8 @@ KINDS = {
     "slides": FileKind("slides_key", "application/pdf", "pdf", 100 * 1024**2),
 }
 DOWNLOAD_EXPIRES_SECONDS = 60 * 60
+# Outlasts a long lecture watched with pauses: a lapsed URL stops playback mid-video.
+VIEWER_DOWNLOAD_EXPIRES_SECONDS = 4 * 60 * 60
 
 
 def key_prefix(lesson):
@@ -47,14 +49,15 @@ def exists(key):
     return storage.head(settings.AWS_PRIVATE_BUCKET_NAME, key) is not None
 
 
-def download_url(key):
-    """A presigned GET URL that expires after an hour; blank for a blank key.
+def download_url(key, expires=DOWNLOAD_EXPIRES_SECONDS):
+    """A presigned GET URL that expires after ``expires`` seconds; blank for a blank key.
 
-    Admin responses only: whoever holds the URL can read the file.
+    Whoever holds the URL can read the file until it expires, so send it only
+    to an admin or to someone allowed to open the lesson.
     """
     if not key:
         return ""
-    return storage.presign_download(settings.AWS_PRIVATE_BUCKET_NAME, key, DOWNLOAD_EXPIRES_SECONDS)
+    return storage.presign_download(settings.AWS_PRIVATE_BUCKET_NAME, key, expires)
 
 
 def keys_of(lessons):

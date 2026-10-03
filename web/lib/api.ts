@@ -237,6 +237,44 @@ export type Enrollment = {
   enrolled_at: string;
 };
 
+/**
+ * What the caller is to a course in the lesson viewer. An enrolled admin is
+ * `enrolled`; a revoked learner is a `visitor`.
+ */
+export type ViewerAccess = "enrolled" | "admin" | "visitor";
+
+export type ViewerCourse = { id: string; title: string; slug: string };
+
+export type ViewerLesson = {
+  id: string;
+  title: string;
+  module: { title: string; position: number };
+  course: ViewerCourse;
+  /** Markdown; blank when the lesson has no text. */
+  body: string;
+  /** Presigned, expiring after four hours; blank when the lesson has no video. */
+  video_url: string;
+  /** Presigned, expiring after four hours; blank when the lesson has no slides. */
+  slides_url: string;
+  /** In curriculum order across modules; `null` on the first lesson. */
+  previous_lesson_id: string | null;
+  /** In curriculum order across modules; `null` on the last lesson. */
+  next_lesson_id: string | null;
+  access: ViewerAccess;
+};
+
+/**
+ * The course of a 403 refusing a locked lesson; `null` for any other error.
+ */
+export function lockedLessonCourse(error: unknown): ViewerCourse | null {
+  if (!(error instanceof ApiError) || error.status !== 403) return null;
+  const { code, course } = (error.body ?? {}) as {
+    code?: unknown;
+    course?: ViewerCourse;
+  };
+  return code === "lesson_locked" && course ? course : null;
+}
+
 /** Tags every public fetch; expire it when a course enters or leaves the catalog. */
 export const CATALOG_CACHE_TAG = "catalog";
 
@@ -309,6 +347,20 @@ export async function fetchEnrollments(): Promise<Enrollment[] | null> {
 
   return apiFetch<Enrollment[]>("/api/users/me/enrollments/");
 }
+
+/**
+ * A lesson as the lesson viewer shows it; signing in is optional. Throws
+ * `ApiError` with status 403 for a locked lesson (see `lockedLessonCourse`),
+ * 404 for an unknown or malformed id, a lesson of another course, or a draft
+ * course the caller can't see, and on any other failure; a suspended
+ * account's passes `isAccountSuspended`. Deduplicated per request.
+ */
+export const fetchViewerLesson = cache(
+  async (slug: string, lessonId: string): Promise<ViewerLesson> =>
+    apiFetch<ViewerLesson>(
+      `/api/learn/${encodeURIComponent(slug)}/lessons/${encodeURIComponent(lessonId)}/`,
+    ),
+);
 
 export const COURSE_SORTS = ["newest", "price_asc", "price_desc"] as const;
 

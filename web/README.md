@@ -31,8 +31,10 @@ web/
     admin/           admin area: shared layout, side nav and access check
     sign-up/[[...sign-up]]/
     sign-in/[[...sign-in]]/
+    (learn)/         the lesson viewer: dark palette, its own slim header, no masthead
   components/        masthead and its admin link, site footer, auth split panel,
-                     auto-submitting select, Markdown renderer (raw HTML as text)
+                     auto-submitting select, Markdown renderer (raw HTML as text),
+                     lesson content renderer (light or dark)
   lib/
     api.ts           server-side fetch against Django, Clerk token attached
     format.ts        price formatting
@@ -48,8 +50,9 @@ mirrors its names one-for-one: a color called `tertiary` there is
 height, tracking and font-variation settings. Don't reach for Tailwind's
 default palette or text scale.
 
-Dark mode is deliberately absent. DESIGN.md scopes it to the lesson viewer,
-which doesn't exist yet.
+Dark mode is scoped to the lesson viewer, not toggled. Its colors are the
+`dark-*` tokens, plus `page-dark`, `card-dark` and the `-dark` buttons; never
+mix them with the light ones on one surface.
 
 **Auth checks belong in pages, not `proxy.ts`.** Clerk deprecated
 `createRouteMatcher` in Core 3: path matching in middleware can diverge from
