@@ -6,17 +6,23 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
+from rest_framework.views import APIView
 
+from courses.models import Lesson
 from users.models import User
 from users.permissions import IsAdmin
 
+from .access import is_locked, viewable_course
 from .models import Enrollment, EnrollmentStatus
 from .serializers import (
     AdminEnrollmentGrantSerializer,
     AdminEnrollmentSerializer,
     EnrollmentSerializer,
+    ViewerCourseSerializer,
+    ViewerLessonSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,6 +41,50 @@ class MyEnrollmentListView(generics.ListAPIView):
         return Enrollment.objects.filter(
             user=self.request.user, status=EnrollmentStatus.ACTIVE
         ).select_related("course")
+
+
+class LessonViewerView(APIView):
+    """One lesson of a course, with the requester's ``access`` and its neighbours.
+
+    Authentication is optional, but a suspended account still gets 401. 404 for
+    an unknown lesson, one of another course, or any lesson of a draft course
+    the requester can't see. A locked lesson answers 403 with
+    ``code: "lesson_locked"`` and the ``course``.
+    ``previous_lesson_id`` and ``next_lesson_id`` follow curriculum order across
+    modules, and are ``null`` at either end.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug, pk):
+        course, access = viewable_course(request.user, slug)
+        lesson = get_object_or_404(
+            Lesson.objects.select_related("module__course"), pk=pk, module__course=course
+        )
+        if is_locked(lesson, access):
+            return Response(
+                {
+                    "detail": "This lesson is for enrolled learners.",
+                    "code": "lesson_locked",
+                    "course": ViewerCourseSerializer(course).data,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        order = list(
+            Lesson.objects.filter(module__course=course)
+            .order_by("module__position", "position")
+            .values_list("pk", flat=True)
+        )
+        index = order.index(lesson.pk)
+        return Response(
+            {
+                **ViewerLessonSerializer(lesson).data,
+                "previous_lesson_id": order[index - 1] if index > 0 else None,
+                "next_lesson_id": order[index + 1] if index + 1 < len(order) else None,
+                "access": access,
+            }
+        )
 
 
 def admin_enrollments():

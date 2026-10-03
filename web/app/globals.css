@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * No dark mode outside the lesson dashboard.
+ * The `dark-*` colors are for the lesson viewer only.
  */
 
 @theme {
@@ -30,6 +30,25 @@
   --color-tertiary: #db9e38;
   --color-tertiary-strong: #925100;
   --color-tertiary-pale: #f5e6ce;
+
+  /* A separate design, not an inversion: never mix with the light colors */
+  --color-dark-bg: #15110b;
+  --color-dark-surface: #211c15;
+  --color-dark-surface-overlay: #302a22;
+  --color-dark-rule: #3e372c;
+  --color-dark-border-strong: #70685b;
+  --color-dark-on-surface: #dcd7cf;
+  --color-dark-on-surface-meta: #948e86;
+  --color-dark-primary: #a0c3da;
+  --color-dark-primary-strong: #79a4c7;
+  --color-dark-tertiary: #e1ad57;
+  --color-dark-tertiary-strong: #cf9128;
+  --color-dark-error: #dd766d;
+  --color-dark-error-subtle: #391917;
+  --color-dark-success: #69b27a;
+  --color-dark-success-subtle: #122a18;
+  --color-dark-warning: #cd995c;
+  --color-dark-warning-subtle: #331f04;
 
   /* Display is for headlines and quotes only */
   --font-display: var(--font-fraunces), "Source Serif 4", Georgia, serif;
@@ -231,6 +250,64 @@
     cursor: not-allowed;
     border-color: var(--color-border-strong);
     color: var(--color-meta-text);
+  }
+}
+
+@utility page-dark {
+  background-color: var(--color-dark-bg);
+  color: var(--color-dark-on-surface);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+
+  /* The light outline color is illegible on the dark base. */
+  & :focus-visible {
+    outline-color: var(--color-dark-primary);
+  }
+}
+
+@utility card-dark {
+  border-radius: var(--radius-lg);
+  background-color: var(--color-dark-surface);
+  color: var(--color-dark-on-surface);
+  padding: var(--spacing-lg);
+}
+
+@utility button-primary-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background-color: var(--color-dark-tertiary);
+  color: var(--color-dark-bg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-dark-tertiary-strong);
+  }
+}
+
+@utility button-secondary-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-dark-primary);
+  border-radius: var(--radius-md);
+  background-color: var(--color-dark-surface);
+  color: var(--color-dark-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-dark-surface-overlay);
+    color: var(--color-dark-primary-strong);
   }
 }
 

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from courses.models import Course
+from courses import lesson_files
+from courses.models import Course, Lesson
 
 from .models import Enrollment, EnrollmentSource, EnrollmentStatus
 
@@ -71,3 +72,40 @@ class AdminEnrollmentGrantSerializer(serializers.Serializer):
                 "Restore the existing enrollment instead."
             )
         return attrs
+
+
+class ViewerCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ["id", "title", "slug"]
+        read_only_fields = fields
+
+
+class ViewerLessonSerializer(serializers.ModelSerializer):
+    """Expects ``module__course`` select-related.
+
+    Signs the video and slides URLs, so only serialize a lesson the requester may open.
+    """
+
+    module = serializers.SerializerMethodField()
+    course = ViewerCourseSerializer(source="module.course", read_only=True)
+    video_url = serializers.SerializerMethodField()
+    slides_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Lesson
+        fields = ["id", "title", "module", "course", "body", "video_url", "slides_url"]
+        read_only_fields = fields
+
+    def get_module(self, lesson):
+        return {"title": lesson.module.title, "position": lesson.module.position}
+
+    def get_video_url(self, lesson):
+        return lesson_files.download_url(
+            lesson.video_key, lesson_files.VIEWER_DOWNLOAD_EXPIRES_SECONDS
+        )
+
+    def get_slides_url(self, lesson):
+        return lesson_files.download_url(
+            lesson.slides_key, lesson_files.VIEWER_DOWNLOAD_EXPIRES_SECONDS
+        )

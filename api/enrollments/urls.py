@@ -4,6 +4,11 @@ from . import views
 
 urlpatterns = [
     path(
+        "learn/<slug:slug>/lessons/<uuid:pk>/",
+        views.LessonViewerView.as_view(),
+        name="learn-lesson",
+    ),
+    path(
         "users/me/enrollments/",
         views.MyEnrollmentListView.as_view(),
         name="user-me-enrollments",
