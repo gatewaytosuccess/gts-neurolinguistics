@@ -10,6 +10,11 @@ urlpatterns = [
         name="learn-lesson",
     ),
     path(
+        "lessons/<uuid:pk>/progress/",
+        views.LessonProgressView.as_view(),
+        name="lesson-progress",
+    ),
+    path(
         "users/me/enrollments/",
         views.MyEnrollmentListView.as_view(),
         name="user-me-enrollments",

@@ -13,6 +13,7 @@ import {
 
 import { LessonFooter } from "../../../_components/lesson-footer";
 import { LockedPanel } from "../../../_components/locked-panel";
+import { RecordOpened } from "../../../_components/record-opened";
 
 type Loaded =
   | { kind: "lesson"; lesson: ViewerLesson }
@@ -83,6 +84,7 @@ export default async function LessonViewerPage({
   const { lesson } = loaded;
   return (
     <main className={mainClass}>
+      {lesson.access === "enrolled" && <RecordOpened lessonId={lesson.id} />}
       <div className="max-w-[960px]">
         <p className="type-label-caps text-dark-on-surface-meta">
           Module {twoDigits(lesson.module.position)} &middot;{" "}
@@ -94,6 +96,7 @@ export default async function LessonViewerPage({
         <LessonContent lesson={lesson} tone="dark" />
         <LessonFooter
           slug={slug}
+          lessonId={lesson.id}
           previousLessonId={lesson.previous_lesson_id}
           nextLessonId={lesson.next_lesson_id}
         />

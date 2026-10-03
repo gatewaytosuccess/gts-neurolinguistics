@@ -14,7 +14,7 @@ from django.db.models import (
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -31,6 +31,7 @@ from .serializers import (
     AdminEnrollmentSerializer,
     EnrollmentSerializer,
     OutlineModuleSerializer,
+    ProgressInputSerializer,
     ViewerCourseSerializer,
     ViewerLessonSerializer,
 )
@@ -138,6 +139,55 @@ class LessonViewerView(APIView):
                 "previous_lesson_id": order[index - 1] if index > 0 else None,
                 "next_lesson_id": order[index + 1] if index + 1 < len(order) else None,
                 "access": access,
+            }
+        )
+
+
+class LessonProgressView(APIView):
+    """Records the requester opening a lesson, or marking it complete or not.
+
+    403 without an active enrollment in the lesson's course, admins included.
+    ``opened`` creates the row or moves its ``updated_at``, and starts a
+    ``not_started`` lesson; it never undoes ``completed``. ``completed: false``
+    puts the lesson back to ``in_progress``. Answers with the lesson's progress
+    and the course's ``lesson_count`` and ``completed_lesson_count``.
+    """
+
+    def put(self, request, pk):
+        lesson = get_object_or_404(Lesson.objects.select_related("module"), pk=pk)
+        enrollment = Enrollment.objects.filter(
+            user=request.user, course_id=lesson.module.course_id, status=EnrollmentStatus.ACTIVE
+        ).first()
+        if enrollment is None:
+            raise PermissionDenied("Only learners enrolled in this course record progress.")
+
+        serializer = ProgressInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        completed = serializer.validated_data.get("completed")
+
+        with transaction.atomic():
+            progress, _ = LessonProgress.objects.select_for_update().get_or_create(
+                user=request.user, lesson=lesson
+            )
+            if progress.status == ProgressStatus.NOT_STARTED:
+                progress.status = ProgressStatus.IN_PROGRESS
+            if completed and progress.status != ProgressStatus.COMPLETED:
+                progress.status = ProgressStatus.COMPLETED
+                progress.completed_at = timezone.now()
+            elif completed is False:
+                progress.status = ProgressStatus.IN_PROGRESS
+                progress.completed_at = None
+            # Saved even when nothing changed, so updated_at records the visit.
+            progress.save()
+
+        counts = Enrollment.objects.with_progress().get(pk=enrollment.pk)
+        return Response(
+            {
+                "lesson_id": lesson.pk,
+                "status": progress.status,
+                "completed_at": progress.completed_at,
+                "lesson_count": counts.lesson_count,
+                "completed_lesson_count": counts.completed_lesson_count,
             }
         )
 

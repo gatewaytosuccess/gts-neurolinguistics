@@ -76,6 +76,21 @@ class AdminEnrollmentGrantSerializer(serializers.Serializer):
         return attrs
 
 
+class ProgressInputSerializer(serializers.Serializer):
+    opened = serializers.BooleanField(required=False)
+    completed = serializers.BooleanField(required=False)
+
+    def validate_opened(self, value):
+        if not value:
+            raise serializers.ValidationError("Send opened only as true.")
+        return value
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError("Send opened or completed.")
+        return attrs
+
+
 class ViewerCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course

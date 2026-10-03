@@ -291,6 +291,23 @@ export type ViewerOutline = {
   modules: OutlineModule[];
 };
 
+export type ProgressStatus = "not_started" | "in_progress" | "completed";
+
+export type LessonProgressInput = {
+  /** Starts the lesson and moves its `updated_at`; never undoes completion. */
+  opened?: true;
+  /** `false` puts a completed lesson back to `in_progress`. */
+  completed?: boolean;
+};
+
+export type LessonProgress = {
+  lesson_id: string;
+  status: ProgressStatus;
+  completed_at: string | null;
+  lesson_count: number;
+  completed_lesson_count: number;
+};
+
 /**
  * The course of a 403 refusing a locked lesson; `null` for any other error.
  */
@@ -400,6 +417,21 @@ export const fetchViewerOutline = cache(
   async (slug: string): Promise<ViewerOutline> =>
     apiFetch<ViewerOutline>(`/api/learn/${encodeURIComponent(slug)}/`),
 );
+
+/**
+ * Records the signed-in learner's progress on a lesson. Throws `ApiError`
+ * with status 403 without an active enrollment in its course (admins
+ * included), 404 for an unknown lesson, and on any other failure.
+ */
+export async function saveLessonProgress(
+  lessonId: string,
+  input: LessonProgressInput,
+): Promise<LessonProgress> {
+  return apiFetch<LessonProgress>(
+    `/api/lessons/${encodeURIComponent(lessonId)}/progress/`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
 
 export const COURSE_SORTS = ["newest", "price_asc", "price_desc"] as const;
 
