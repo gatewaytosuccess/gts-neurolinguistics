@@ -110,6 +110,11 @@ enrollments: grant those in Django admin.
   expire after four hours, the previous and next lesson ids and the caller's `access`
   (`enrolled`, `admin` or `visitor`); signing in is optional. A locked lesson answers 403 with
   `code: "lesson_locked"`, and a visitor gets 404 for any lesson of a draft course
+- `PUT /api/lessons/<id>/progress/` — `{opened?: true, completed?: bool}` records the caller opening
+  a lesson or marking it complete or not, and answers with its `status`, `completed_at` and the
+  course's `lesson_count` and `completed_lesson_count`. `opened` never undoes completion, and
+  `completed: false` puts the lesson back to `in_progress`. 403 without an active enrollment in the
+  lesson's course, admins included
 - `/admin/` — Django admin (superuser password login; unrelated to Clerk)
 
 Any admin write to a published course, its curriculum or its lessons that would leave it

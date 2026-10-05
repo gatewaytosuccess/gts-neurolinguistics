@@ -1,3 +1,4 @@
+import { LessonSlides, LessonVideo } from "@/components/lesson-media";
 import { Markdown, type Tone } from "@/components/markdown";
 
 export type LessonContentProps = {
@@ -40,31 +41,19 @@ export function LessonContent({
   return (
     <div className="flex flex-col gap-xl">
       {lesson.video_url && (
-        <video
-          src={lesson.video_url}
-          controls
-          preload="metadata"
+        <LessonVideo
+          url={lesson.video_url}
           className={`aspect-video w-full rounded-xs ${color.frame}`}
         />
       )}
 
       {lesson.slides_url && (
-        <div>
-          <iframe
-            src={lesson.slides_url}
-            title={`${lesson.title} slides`}
-            className={`aspect-[4/3] w-full rounded-xs ${color.frame}`}
-          />
-          {/* Some browsers, most phones among them, can't show a PDF inline. */}
-          <a
-            href={lesson.slides_url}
-            target="_blank"
-            rel="noreferrer"
-            className={`type-label-md mt-sm inline-block underline ${color.link}`}
-          >
-            Download the slides (PDF)
-          </a>
-        </div>
+        <LessonSlides
+          url={lesson.slides_url}
+          title={`${lesson.title} slides`}
+          frameClassName={`aspect-[4/3] w-full rounded-xs ${color.frame}`}
+          linkClassName={`type-label-md mt-sm inline-block underline ${color.link}`}
+        />
       )}
 
       {lesson.body && <Markdown tone={tone}>{lesson.body}</Markdown>}
