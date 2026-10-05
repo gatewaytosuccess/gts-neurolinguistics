@@ -107,7 +107,8 @@ class LessonViewerView(APIView):
     the requester can't see. A locked lesson answers 403 with
     ``code: "lesson_locked"`` and the ``course``.
     ``previous_lesson_id`` and ``next_lesson_id`` follow curriculum order across
-    modules, and are ``null`` at either end.
+    modules, and are ``null`` at either end. ``progress`` is ``null`` unless
+    the requester is enrolled.
     """
 
     permission_classes = [AllowAny]
@@ -139,18 +140,29 @@ class LessonViewerView(APIView):
                 "previous_lesson_id": order[index - 1] if index > 0 else None,
                 "next_lesson_id": order[index + 1] if index + 1 < len(order) else None,
                 "access": access,
+                "progress": viewer_progress(request.user, lesson, access),
             }
         )
 
 
+def viewer_progress(user, lesson, access):
+    if access != Access.ENROLLED:
+        return None
+    progress = LessonProgress.objects.filter(user=user, lesson=lesson).first()
+    if progress is None:
+        return {"status": ProgressStatus.NOT_STARTED, "last_position_seconds": 0}
+    return {"status": progress.status, "last_position_seconds": progress.last_position_seconds}
+
+
 class LessonProgressView(APIView):
-    """Records the requester opening a lesson, or marking it complete or not.
+    """Records the requester opening a lesson, marking it complete or not, or their video position.
 
     403 without an active enrollment in the lesson's course, admins included.
-    ``opened`` creates the row or moves its ``updated_at``, and starts a
-    ``not_started`` lesson; it never undoes ``completed``. ``completed: false``
-    puts the lesson back to ``in_progress``. Answers with the lesson's progress
-    and the course's ``lesson_count`` and ``completed_lesson_count``.
+    ``opened`` and ``position_seconds`` create the row or move its
+    ``updated_at``, and start a ``not_started`` lesson; neither undoes
+    ``completed``. ``completed: false`` puts the lesson back to
+    ``in_progress``. Answers with the lesson's progress and the course's
+    ``lesson_count`` and ``completed_lesson_count``.
     """
 
     def put(self, request, pk):
@@ -164,6 +176,7 @@ class LessonProgressView(APIView):
         serializer = ProgressInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         completed = serializer.validated_data.get("completed")
+        position = serializer.validated_data.get("position_seconds")
 
         with transaction.atomic():
             progress, _ = LessonProgress.objects.select_for_update().get_or_create(
@@ -177,6 +190,8 @@ class LessonProgressView(APIView):
             elif completed is False:
                 progress.status = ProgressStatus.IN_PROGRESS
                 progress.completed_at = None
+            if position is not None:
+                progress.last_position_seconds = position
             # Saved even when nothing changed, so updated_at records the visit.
             progress.save()
 
@@ -186,6 +201,7 @@ class LessonProgressView(APIView):
                 "lesson_id": lesson.pk,
                 "status": progress.status,
                 "completed_at": progress.completed_at,
+                "last_position_seconds": progress.last_position_seconds,
                 "lesson_count": counts.lesson_count,
                 "completed_lesson_count": counts.completed_lesson_count,
             }

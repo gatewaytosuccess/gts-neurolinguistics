@@ -166,7 +166,19 @@ class TestAccess:
 
 
 class TestValidation:
-    @pytest.mark.parametrize("data", [{}, {"opened": False}, {"completed": "maybe"}])
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {},
+            {"opened": False},
+            {"completed": "maybe"},
+            {"position_seconds": -1},
+            {"position_seconds": 12.5},
+            {"position_seconds": "soon"},
+            {"position_seconds": None},
+            {"position_seconds": 2_147_483_648},
+        ],
+    )
     def test_refuses_a_body_that_changes_nothing_or_is_malformed(self, client, ada, data):
         course = make_course()
         enroll(ada, course)
@@ -311,6 +323,102 @@ class TestCompleted:
         assert progress_of(grace, broca).status == ProgressStatus.COMPLETED
 
 
+class TestPosition:
+    def test_creates_the_row_in_progress_at_that_position(self, client, ada):
+        course = make_course()
+        enroll(ada, course)
+        broca = lesson_of(course, "Broca")
+
+        response = put_progress(client, broca, {"position_seconds": 95})
+
+        assert response.status_code == 200
+        assert response.json()["last_position_seconds"] == 95
+        progress = progress_of(ada, broca)
+        assert progress.status == ProgressStatus.IN_PROGRESS
+        assert progress.last_position_seconds == 95
+
+    def test_starts_a_not_started_row(self, client, ada):
+        course = make_course()
+        enroll(ada, course)
+        broca = lesson_of(course, "Broca")
+        seed(ada, broca, ProgressStatus.NOT_STARTED)
+
+        put_progress(client, broca, {"position_seconds": 10})
+
+        assert progress_of(ada, broca).status == ProgressStatus.IN_PROGRESS
+
+    def test_overwrites_the_last_position_even_backwards(self, client, ada):
+        course = make_course()
+        enroll(ada, course)
+        broca = lesson_of(course, "Broca")
+        seed(ada, broca, ProgressStatus.IN_PROGRESS, last_position_seconds=300)
+
+        put_progress(client, broca, {"position_seconds": 0})
+
+        assert progress_of(ada, broca).last_position_seconds == 0
+
+    def test_never_un_completes_a_lesson(self, client, ada):
+        course = make_course()
+        enroll(ada, course)
+        broca = lesson_of(course, "Broca")
+        seeded = seed(ada, broca, ProgressStatus.COMPLETED)
+
+        body = put_progress(client, broca, {"position_seconds": 42}).json()
+
+        progress = progress_of(ada, broca)
+        assert progress.status == ProgressStatus.COMPLETED
+        assert progress.completed_at == seeded.completed_at
+        assert progress.last_position_seconds == 42
+        assert body["status"] == "completed"
+
+    def test_touches_the_row(self, client, ada):
+        course = make_course()
+        enroll(ada, course)
+        broca = lesson_of(course, "Broca")
+        earlier = backdate(seed(ada, broca, ProgressStatus.IN_PROGRESS))
+
+        put_progress(client, broca, {"position_seconds": 5})
+
+        assert progress_of(ada, broca).updated_at > earlier
+
+    def test_completed_alongside_a_position_records_both(self, client, ada):
+        course = make_course()
+        enroll(ada, course)
+        broca = lesson_of(course, "Broca")
+
+        put_progress(client, broca, {"completed": True, "position_seconds": 600})
+
+        progress = progress_of(ada, broca)
+        assert progress.status == ProgressStatus.COMPLETED
+        assert progress.last_position_seconds == 600
+
+    def test_leaves_the_position_alone_when_not_sent(self, client, ada):
+        course = make_course()
+        enroll(ada, course)
+        broca = lesson_of(course, "Broca")
+        seed(ada, broca, ProgressStatus.IN_PROGRESS, last_position_seconds=120)
+
+        put_progress(client, broca, {"completed": True})
+
+        assert progress_of(ada, broca).last_position_seconds == 120
+
+    def test_a_visitor_is_refused(self, client, ada):
+        course = make_course()
+
+        response = put_progress(client, lesson_of(course, "Intro"), {"position_seconds": 5})
+
+        assert response.status_code == 403
+        assert not LessonProgress.objects.exists()
+
+    def test_an_admin_who_is_not_enrolled_is_refused(self, client, admin):
+        course = make_course()
+
+        response = put_progress(client, lesson_of(course, "Broca"), {"position_seconds": 5})
+
+        assert response.status_code == 403
+        assert not LessonProgress.objects.exists()
+
+
 class TestPayload:
     def test_returns_the_progress_and_the_course_counts(self, client, ada, grace):
         course = make_course()
@@ -327,6 +435,7 @@ class TestPayload:
             "lesson_id": str(broca.pk),
             "status": "completed",
             "completed_at": progress.completed_at.isoformat().replace("+00:00", "Z"),
+            "last_position_seconds": 0,
             "lesson_count": 3,
             "completed_lesson_count": 2,
         }

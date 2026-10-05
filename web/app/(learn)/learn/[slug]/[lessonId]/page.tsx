@@ -14,6 +14,7 @@ import {
 import { LessonFooter } from "../../../_components/lesson-footer";
 import { LockedPanel } from "../../../_components/locked-panel";
 import { RecordOpened } from "../../../_components/record-opened";
+import { ViewerVideo } from "../../../_components/viewer-video";
 
 type Loaded =
   | { kind: "lesson"; lesson: ViewerLesson }
@@ -93,7 +94,18 @@ export default async function LessonViewerPage({
         <h1 className="type-headline-sm mt-sm mb-xl break-words">
           {lesson.title}
         </h1>
-        <LessonContent lesson={lesson} tone="dark" />
+        <LessonContent
+          lesson={lesson}
+          tone="dark"
+          renderVideo={(video) => (
+            <ViewerVideo
+              key={lesson.id}
+              {...video}
+              lessonId={lesson.id}
+              progress={lesson.progress}
+            />
+          )}
+        />
         <LessonFooter
           slug={slug}
           lessonId={lesson.id}

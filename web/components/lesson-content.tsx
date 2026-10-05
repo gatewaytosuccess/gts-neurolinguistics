@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { LessonSlides, LessonVideo } from "@/components/lesson-media";
 import { Markdown, type Tone } from "@/components/markdown";
 
@@ -28,9 +30,12 @@ const colors = {
 export function LessonContent({
   lesson,
   tone,
+  renderVideo = (video) => <LessonVideo {...video} />,
 }: {
   lesson: LessonContentProps;
   tone: Tone;
+  /** Replaces the plain `<video>`, e.g. to resume and save the learner's position. */
+  renderVideo?: (video: { url: string; className: string }) => ReactNode;
 }) {
   const color = colors[tone];
 
@@ -40,12 +45,11 @@ export function LessonContent({
 
   return (
     <div className="flex flex-col gap-xl">
-      {lesson.video_url && (
-        <LessonVideo
-          url={lesson.video_url}
-          className={`aspect-video w-full rounded-xs ${color.frame}`}
-        />
-      )}
+      {lesson.video_url &&
+        renderVideo({
+          url: lesson.video_url,
+          className: `aspect-video w-full rounded-xs ${color.frame}`,
+        })}
 
       {lesson.slides_url && (
         <LessonSlides

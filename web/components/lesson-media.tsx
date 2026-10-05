@@ -9,14 +9,18 @@ function objectOf(url: string) {
 /**
  * Keeps the first signed URL for as long as it points at the same object, so
  * a refresh that re-signs it doesn't restart the video or reload the slides.
+ * After `repin()`, the next re-signed URL replaces it.
  */
-function usePinnedUrl(url: string) {
+export function usePinnedUrl(url: string) {
   const [pinned, setPinned] = useState(url);
-  if (objectOf(pinned) !== objectOf(url)) {
+  const [repinning, setRepinning] = useState(false);
+  const repin = () => setRepinning(true);
+  if (pinned !== url && (repinning || objectOf(pinned) !== objectOf(url))) {
     setPinned(url);
-    return url;
+    setRepinning(false);
+    return { url, repin };
   }
-  return pinned;
+  return { url: pinned, repin };
 }
 
 export function LessonVideo({
@@ -28,7 +32,7 @@ export function LessonVideo({
 }) {
   return (
     <video
-      src={usePinnedUrl(url)}
+      src={usePinnedUrl(url).url}
       controls
       preload="metadata"
       className={className}
@@ -47,7 +51,7 @@ export function LessonSlides({
   frameClassName: string;
   linkClassName: string;
 }) {
-  const src = usePinnedUrl(url);
+  const { url: src } = usePinnedUrl(url);
   return (
     <div>
       <iframe src={src} title={title} className={frameClassName} />

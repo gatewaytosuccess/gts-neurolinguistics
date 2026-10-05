@@ -79,6 +79,10 @@ class AdminEnrollmentGrantSerializer(serializers.Serializer):
 class ProgressInputSerializer(serializers.Serializer):
     opened = serializers.BooleanField(required=False)
     completed = serializers.BooleanField(required=False)
+    # The upper bound is the column's.
+    position_seconds = serializers.IntegerField(
+        required=False, min_value=0, max_value=2_147_483_647
+    )
 
     def validate_opened(self, value):
         if not value:
@@ -87,7 +91,7 @@ class ProgressInputSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs:
-            raise serializers.ValidationError("Send opened or completed.")
+            raise serializers.ValidationError("Send opened, completed or position_seconds.")
         return attrs
 
 
