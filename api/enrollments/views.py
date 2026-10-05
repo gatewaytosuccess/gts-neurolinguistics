@@ -26,6 +26,7 @@ from users.permissions import IsAdmin
 
 from .access import Access, is_locked, viewable_course
 from .models import Enrollment, EnrollmentStatus, LessonProgress, ProgressStatus
+from .progress import continue_lesson_id, curriculum_order
 from .serializers import (
     AdminEnrollmentGrantSerializer,
     AdminEnrollmentSerializer,
@@ -128,11 +129,7 @@ class LessonViewerView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        order = list(
-            Lesson.objects.filter(module__course=course)
-            .order_by("module__position", "position")
-            .values_list("pk", flat=True)
-        )
+        order = curriculum_order(course)
         index = order.index(lesson.pk)
         return Response(
             {
@@ -143,6 +140,33 @@ class LessonViewerView(APIView):
                 "progress": viewer_progress(request.user, lesson, access),
             }
         )
+
+
+class ContinueView(APIView):
+    """The lesson ``/learn/<slug>`` opens, as ``lesson_id``, with the requester's ``access``.
+
+    Authentication is optional, but a suspended account still gets 401. 404 for
+    an unknown course, or a draft the requester can't see. An enrolled learner
+    gets their **Continue** lesson, an admin the first lesson, and a visitor the
+    first preview lesson. ``lesson_id`` is ``null`` when there's no such lesson.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        course, access = viewable_course(request.user, slug)
+        if access == Access.ENROLLED:
+            lesson_id = continue_lesson_id(request.user, course)
+        else:
+            lessons = Lesson.objects.filter(module__course=course)
+            if access == Access.VISITOR:
+                lessons = lessons.filter(is_preview=True)
+            lesson_id = (
+                lessons.order_by("module__position", "position")
+                .values_list("pk", flat=True)
+                .first()
+            )
+        return Response({"lesson_id": lesson_id, "access": access})
 
 
 def viewer_progress(user, lesson, access):

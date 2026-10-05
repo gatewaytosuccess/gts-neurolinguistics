@@ -429,6 +429,29 @@ export const fetchViewerOutline = cache(
     apiFetch<ViewerOutline>(`/api/learn/${encodeURIComponent(slug)}/`),
 );
 
+export type ViewerContinue = {
+  /**
+   * An enrolled learner's Continue lesson, an admin's first lesson or a
+   * visitor's first preview lesson; `null` when there's no such lesson.
+   */
+  lesson_id: string | null;
+  access: ViewerAccess;
+};
+
+/**
+ * Where `/learn/[slug]` sends the caller; signing in is optional. Throws
+ * `ApiError` with status 404 for an unknown course or a draft the caller
+ * can't see, and on any other failure; a suspended account's passes
+ * `isAccountSuspended`.
+ */
+export async function fetchViewerContinue(
+  slug: string,
+): Promise<ViewerContinue> {
+  return apiFetch<ViewerContinue>(
+    `/api/learn/${encodeURIComponent(slug)}/continue/`,
+  );
+}
+
 /**
  * Records the signed-in learner's progress on a lesson. Throws `ApiError`
  * with status 403 without an active enrollment in its course (admins

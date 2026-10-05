@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("learn/<slug:slug>/", views.LessonOutlineView.as_view(), name="learn-outline"),
+    path("learn/<slug:slug>/continue/", views.ContinueView.as_view(), name="learn-continue"),
     path(
         "learn/<slug:slug>/lessons/<uuid:pk>/",
         views.LessonViewerView.as_view(),

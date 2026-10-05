@@ -33,18 +33,29 @@ export function PurchasePanel({
         {enrolled ? "You’re enrolled" : formatPrice(course.price_cents)}
       </p>
 
-      {/* Disabled until the cart and the lesson viewer exist. */}
-      <button
-        type="button"
-        disabled
-        aria-describedby="purchase-note"
-        className="button-primary mt-md"
-      >
-        {enrolled ? "Continue" : "Add to cart"}
-      </button>
-      <p id="purchase-note" className="type-caption mt-xs text-meta-text">
-        {enrolled ? "The lesson viewer opens soon." : "Enrollment opens soon."}
-      </p>
+      {enrolled ? (
+        <Link
+          href={`/learn/${encodeURIComponent(course.slug)}`}
+          className="button-primary mt-md"
+        >
+          Continue
+        </Link>
+      ) : (
+        <>
+          {/* Disabled until the cart exists. */}
+          <button
+            type="button"
+            disabled
+            aria-describedby="purchase-note"
+            className="button-primary mt-md"
+          >
+            Add to cart
+          </button>
+          <p id="purchase-note" className="type-caption mt-xs text-meta-text">
+            Enrollment opens soon.
+          </p>
+        </>
+      )}
 
       <CourseStats course={course} />
 
