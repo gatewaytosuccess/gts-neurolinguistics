@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { setLessonCompleted } from "../_lib/progress-actions";
-import { useOutline } from "./outline-context";
+import { isLessonCompleted, useOutline } from "./outline-context";
 
 /** Renders nothing unless the outline says the caller is enrolled. */
 export function MarkComplete({ lessonId }: { lessonId: string }) {
@@ -12,9 +12,7 @@ export function MarkComplete({ lessonId }: { lessonId: string }) {
   const [error, setError] = useState<string>();
 
   if (outline?.access !== "enrolled") return null;
-  const completed = outline.modules
-    .flatMap((module) => module.lessons)
-    .some((lesson) => lesson.id === lessonId && lesson.completed);
+  const completed = isLessonCompleted(outline, lessonId);
 
   function save(next: boolean) {
     setError(undefined);

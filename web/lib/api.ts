@@ -261,6 +261,14 @@ export type ViewerLesson = {
   /** In curriculum order across modules; `null` on the last lesson. */
   next_lesson_id: string | null;
   access: ViewerAccess;
+  /** `null` unless the caller is enrolled. */
+  progress: ViewerLessonProgress | null;
+};
+
+export type ViewerLessonProgress = {
+  status: ProgressStatus;
+  /** Where the video was last saved; `0` if it never was. */
+  last_position_seconds: number;
 };
 
 export type OutlineLesson = Pick<
@@ -298,12 +306,15 @@ export type LessonProgressInput = {
   opened?: true;
   /** `false` puts a completed lesson back to `in_progress`. */
   completed?: boolean;
+  /** A non-negative whole number; starts the lesson but never undoes completion. */
+  position_seconds?: number;
 };
 
 export type LessonProgress = {
   lesson_id: string;
   status: ProgressStatus;
   completed_at: string | null;
+  last_position_seconds: number;
   lesson_count: number;
   completed_lesson_count: number;
 };

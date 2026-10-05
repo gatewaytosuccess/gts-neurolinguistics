@@ -32,6 +32,7 @@ web/
     sign-up/[[...sign-up]]/
     sign-in/[[...sign-in]]/
     (learn)/         the lesson viewer: dark palette, its own slim header, no masthead
+      learn/api/progress/  route handler for video-position saves, beacons included
   components/        masthead and its admin link, site footer, auth split panel,
                      auto-submitting select, Markdown renderer (raw HTML as text),
                      lesson content renderer (light or dark)

@@ -3,9 +3,16 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from courses.models import Course, CourseStatus, Lesson, Module
-from enrollments.models import Enrollment, EnrollmentSource, EnrollmentStatus
+from enrollments.models import (
+    Enrollment,
+    EnrollmentSource,
+    EnrollmentStatus,
+    LessonProgress,
+    ProgressStatus,
+)
 from users.authentication import ClerkAuthentication
 from users.models import Role, User, UserStatus
 
@@ -33,6 +40,11 @@ def admin(signed_in):
     return User.objects.create_user(
         email="ada@example.com", clerk_user_id="user_2abcDEF", role=Role.ADMIN
     )
+
+
+@pytest.fixture
+def grace():
+    return User.objects.create_user(email="grace@example.com", clerk_user_id="user_2ghiJKL")
 
 
 def make_course(slug="foundations", status=CourseStatus.PUBLISHED):
@@ -262,6 +274,7 @@ class TestPayload:
             "previous_lesson_id": str(lesson_of(course, "Intro").pk),
             "next_lesson_id": str(lesson_of(course, "Wernicke").pk),
             "access": "enrolled",
+            "progress": {"status": "not_started", "last_position_seconds": 0},
         }
 
     def test_signs_urls_that_expire_after_four_hours(self, client, ada, s3):
@@ -276,6 +289,49 @@ class TestPayload:
 
         assert presigned_get(body["video_url"]) == (video_key, 4 * 60 * 60)
         assert presigned_get(body["slides_url"]) == (slides_key, 4 * 60 * 60)
+
+
+class TestProgress:
+    def test_returns_the_enrolled_learners_own_progress(self, client, ada, grace):
+        course = make_course()
+        enroll(ada, course)
+        broca = lesson_of(course, "Broca")
+        LessonProgress.objects.create(
+            user=ada, lesson=broca, status=ProgressStatus.IN_PROGRESS, last_position_seconds=95
+        )
+        LessonProgress.objects.create(
+            user=grace,
+            lesson=broca,
+            status=ProgressStatus.COMPLETED,
+            last_position_seconds=600,
+            completed_at=timezone.now(),
+        )
+
+        body = get_lesson(client, course, broca).json()
+
+        assert body["progress"] == {"status": "in_progress", "last_position_seconds": 95}
+
+    def test_is_null_for_a_visitor(self, client):
+        course = make_course()
+
+        body = get_lesson(client, course, lesson_of(course, "Intro"), signed_in=False).json()
+
+        assert body["progress"] is None
+
+    def test_is_null_for_an_admin_who_is_not_enrolled(self, client, admin):
+        course = make_course()
+        broca = lesson_of(course, "Broca")
+        LessonProgress.objects.create(user=admin, lesson=broca, last_position_seconds=95)
+
+        assert get_lesson(client, course, broca).json()["progress"] is None
+
+    def test_is_null_for_a_revoked_learner_whose_rows_remain(self, client, ada):
+        course = make_course()
+        enroll(ada, course, status=EnrollmentStatus.REVOKED)
+        intro = lesson_of(course, "Intro")
+        LessonProgress.objects.create(user=ada, lesson=intro, last_position_seconds=95)
+
+        assert get_lesson(client, course, intro).json()["progress"] is None
 
 
 class TestNeighbours:
