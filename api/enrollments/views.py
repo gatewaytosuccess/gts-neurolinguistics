@@ -76,6 +76,7 @@ class LessonOutlineView(APIView):
     an unknown course, or a draft the requester can't see. ``completed`` and
     ``completed_lesson_count`` come from the requester's own progress, and only
     while enrolled: an admin or a revoked learner sees nothing completed.
+    ``revoked_at`` is set only when the requester's own enrollment is revoked.
     """
 
     permission_classes = [AllowAny]
@@ -107,6 +108,7 @@ class LessonOutlineView(APIView):
             {
                 "course": ViewerCourseSerializer(course).data,
                 "access": access,
+                "revoked_at": revoked_at(request.user, course),
                 "lesson_count": sum(len(module.lessons.all()) for module in modules),
                 "completed_lesson_count": len(completed_ids),
                 "modules": OutlineModuleSerializer(modules, many=True, context=context).data,
@@ -181,6 +183,16 @@ class ContinueView(APIView):
                 .first()
             )
         return Response({"lesson_id": lesson_id, "access": access})
+
+
+def revoked_at(user, course):
+    if not user.is_authenticated:
+        return None
+    return (
+        Enrollment.objects.filter(user=user, course=course, status=EnrollmentStatus.REVOKED)
+        .values_list("revoked_at", flat=True)
+        .first()
+    )
 
 
 def viewer_progress(user, lesson, access):
