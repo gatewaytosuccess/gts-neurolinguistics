@@ -23,19 +23,23 @@ class ProgressStatus(models.TextChoices):
 
 class EnrollmentQuerySet(models.QuerySet):
     def with_progress(self):
-        """Adds ``lesson_count`` and ``completed_lesson_count``, over the course's current lessons.
+        """Adds ``lesson_count``, ``completed_lesson_count`` and ``last_activity_at``.
 
-        Only the enrolled user's completed lessons count.
+        All three read only the course's current lessons and the enrolled
+        user's own progress. ``last_activity_at`` is ``None`` with no progress.
         """
         lessons = "course__modules__lessons"
-        completed = models.Q(
-            course__modules__lessons__progress__user=models.F("user"),
-            course__modules__lessons__progress__status=ProgressStatus.COMPLETED,
+        own = models.Q(course__modules__lessons__progress__user=models.F("user"))
+        completed = own & models.Q(
+            course__modules__lessons__progress__status=ProgressStatus.COMPLETED
         )
         # distinct: the progress join fans each lesson out to every learner's row.
         return self.annotate(
             lesson_count=models.Count(lessons, distinct=True),
             completed_lesson_count=models.Count(lessons, filter=completed, distinct=True),
+            last_activity_at=models.Max(
+                "course__modules__lessons__progress__updated_at", filter=own
+            ),
         )
 
 

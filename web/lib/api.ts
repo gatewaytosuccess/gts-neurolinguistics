@@ -233,8 +233,19 @@ export type Enrollment = {
   id: string;
   course_id: string;
   course_slug: string;
+  course_title: string;
+  /** Blank when the course has no thumbnail. */
+  course_thumbnail_url: string;
   source: EnrollmentSource;
   enrolled_at: string;
+  /** Over the course's current lessons. */
+  lesson_count: number;
+  completed_lesson_count: number;
+  /** The caller's latest progress update in the course; `null` before they start it. */
+  last_activity_at: string | null;
+  /** Where `/learn/[slug]` redirects them; `null` when the course has no lessons. */
+  continue_lesson_id: string | null;
+  continue_lesson_title: string | null;
 };
 
 /**
@@ -393,9 +404,10 @@ export const fetchCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 });
 
 /**
- * The signed-in user's active enrollments, including in draft courses. `null`
- * if nobody is signed in. Throws on any failure; a suspended account's
- * `ApiError` passes `isAccountSuspended`.
+ * The signed-in user's active enrollments, including in draft courses, most
+ * recent activity first and then courses not yet started, newest enrollment
+ * first. `null` if nobody is signed in. Throws on any failure; a suspended
+ * account's `ApiError` passes `isAccountSuspended`.
  */
 export async function fetchEnrollments(): Promise<Enrollment[] | null> {
   const { userId } = await auth();
