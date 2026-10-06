@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -8,11 +9,12 @@ import {
   fetchCourse,
   fetchCourseReviews,
   fetchCurrentUser,
-  fetchEnrollments,
   fetchMyReview,
+  fetchViewerOutline,
   type CourseDetail,
   type CourseReview,
   type Paginated,
+  type ViewerOutline,
 } from "@/lib/api";
 import { markdownExcerpt } from "@/lib/markdown-excerpt";
 
@@ -55,6 +57,14 @@ async function loadReviews(
   }
 }
 
+// Signed out, the public course data already says which lessons are previews.
+async function fetchSignedInOutline(
+  slug: string,
+): Promise<ViewerOutline | null> {
+  const { userId } = await auth();
+  return userId ? fetchViewerOutline(slug) : null;
+}
+
 function parsePage(value: string | string[] | undefined): number {
   const page = Number(Array.isArray(value) ? value[0] : value);
   return Number.isInteger(page) && page > 1 ? page : 1;
@@ -85,12 +95,12 @@ export default async function CoursePage({
 }: PageProps<"/courses/[slug]">) {
   const { slug } = await params;
   const reviewsPage = parsePage((await searchParams).reviews);
-  const [course, reviews, [enrollments, currentUser, myReview]] =
+  const [course, reviews, [outlineResult, currentUser, myReview]] =
     await Promise.all([
       loadCourse(slug),
       loadReviews(slug, reviewsPage),
       Promise.allSettled([
-        fetchEnrollments(),
+        fetchSignedInOutline(slug),
         fetchCurrentUser(),
         fetchMyReview(slug),
       ]),
@@ -108,11 +118,9 @@ export default async function CoursePage({
   }
 
   // A failed call (suspended account, API error) reads as not enrolled and not an admin.
-  const enrolled =
-    enrollments.status === "fulfilled" &&
-    (enrollments.value ?? []).some(
-      (enrollment) => enrollment.course_id === course.id,
-    );
+  const outline =
+    outlineResult.status === "fulfilled" ? outlineResult.value : null;
+  const enrolled = outline?.access === "enrolled";
   const isAdmin =
     currentUser.status === "fulfilled" && currentUser.value?.role === "admin";
 
@@ -150,7 +158,13 @@ export default async function CoursePage({
               </div>
             </section>
           )}
-          {course.modules.length > 0 && <Curriculum modules={course.modules} />}
+          {course.modules.length > 0 && (
+            <Curriculum
+              slug={course.slug}
+              modules={course.modules}
+              outline={outline}
+            />
+          )}
         </div>
       </div>
 
