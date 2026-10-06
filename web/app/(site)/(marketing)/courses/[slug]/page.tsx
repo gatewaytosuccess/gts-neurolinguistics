@@ -22,7 +22,10 @@ import { InstructorCredentials } from "../../_components/landing/instructor-cred
 import { landing } from "../../_content/landing";
 import { Curriculum } from "./_components/curriculum";
 import { MyReviewPanel } from "./_components/my-review";
-import { PurchasePanel } from "./_components/purchase-panel";
+import {
+  PurchasePanel,
+  type EnrollmentState,
+} from "./_components/purchase-panel";
 import { Reviews } from "./_components/reviews";
 import { deleteReview, saveReview } from "./_lib/review-actions";
 
@@ -121,6 +124,11 @@ export default async function CoursePage({
   const outline =
     outlineResult.status === "fulfilled" ? outlineResult.value : null;
   const enrolled = outline?.access === "enrolled";
+  const enrollment: EnrollmentState = enrolled
+    ? "enrolled"
+    : outline?.revoked_at
+      ? "revoked"
+      : "none";
   const isAdmin =
     currentUser.status === "fulfilled" && currentUser.value?.role === "admin";
 
@@ -142,7 +150,7 @@ export default async function CoursePage({
 
         <PurchasePanel
           course={course}
-          enrolled={enrolled}
+          enrollment={enrollment}
           isAdmin={isAdmin}
           className="min-w-0 md:sticky md:top-lg md:col-span-5 md:col-start-8 md:row-span-2 md:row-start-1 md:self-start lg:col-span-4 lg:col-start-9"
         />

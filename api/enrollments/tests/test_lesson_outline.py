@@ -157,6 +157,35 @@ class TestRevokedLearner:
 
         assert get_outline(client).status_code == 404
 
+    def test_gets_when_it_was_revoked(self, client, ada):
+        course = make_course()
+        enroll(ada, course, status=EnrollmentStatus.REVOKED, revoked_at="2026-09-01T12:00:00Z")
+
+        assert outline_of(get_outline(client))["revoked_at"] == "2026-09-01T12:00:00Z"
+
+
+class TestRevokedAt:
+    def test_is_null_signed_out(self, client):
+        make_course()
+
+        assert outline_of(get_outline(client, signed_in=False))["revoked_at"] is None
+
+    def test_is_null_without_an_enrollment(self, client, ada):
+        make_course()
+
+        assert outline_of(get_outline(client))["revoked_at"] is None
+
+    def test_is_null_while_enrolled(self, client, ada):
+        enroll(ada, make_course())
+
+        assert outline_of(get_outline(client))["revoked_at"] is None
+
+    def test_ignores_someone_elses_revoke(self, client, ada, grace):
+        course = make_course()
+        enroll(grace, course, status=EnrollmentStatus.REVOKED, revoked_at="2026-09-01T12:00:00Z")
+
+        assert outline_of(get_outline(client))["revoked_at"] is None
+
 
 class TestAdmin:
     @pytest.mark.parametrize("status", CourseStatus.values)
@@ -267,6 +296,7 @@ class TestPayload:
         assert body == {
             "course": {"id": str(course.pk), "title": "Foundations", "slug": "foundations"},
             "access": "enrolled",
+            "revoked_at": None,
             "lesson_count": 3,
             "completed_lesson_count": 1,
             "modules": [

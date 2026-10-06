@@ -3,20 +3,22 @@ import Link from "next/link";
 import type { CourseDetail } from "@/lib/api";
 import { formatApproximateDuration, formatPrice } from "@/lib/format";
 
+export type EnrollmentState = "enrolled" | "revoked" | "none";
+
 export function PurchasePanel({
   course,
-  enrolled,
+  enrollment,
   isAdmin,
   className = "",
 }: {
   course: CourseDetail;
-  enrolled: boolean;
+  enrollment: EnrollmentState;
   isAdmin: boolean;
   className?: string;
 }) {
   return (
     <aside
-      aria-label={enrolled ? "Your enrollment" : "Enroll"}
+      aria-label={enrollment === "none" ? "Enroll" : "Your enrollment"}
       className={`rounded-lg bg-paper-raised p-lg ${className}`}
     >
       {course.thumbnail_url && (
@@ -29,19 +31,40 @@ export function PurchasePanel({
         />
       )}
 
-      <p className="type-headline-sm">
-        {enrolled ? "You’re enrolled" : formatPrice(course.price_cents)}
-      </p>
-
-      {enrolled ? (
-        <Link
-          href={`/learn/${encodeURIComponent(course.slug)}`}
-          className="button-primary mt-md"
-        >
-          Continue
-        </Link>
-      ) : (
+      {enrollment === "enrolled" && (
         <>
+          <p className="type-headline-sm">You&rsquo;re enrolled</p>
+          <Link
+            href={`/learn/${encodeURIComponent(course.slug)}`}
+            className="button-primary mt-md"
+          >
+            Continue
+          </Link>
+        </>
+      )}
+
+      {enrollment === "revoked" && (
+        <>
+          <p className="type-headline-sm">Your access has ended</p>
+          <p className="type-body-sm mt-sm">
+            Your progress is saved. If your access is restored, you&rsquo;ll
+            pick up where you left off.
+          </p>
+          <p className="type-body-sm mt-sm">
+            Questions?{" "}
+            <Link
+              href="/contact"
+              className="text-primary underline hover:text-primary-strong"
+            >
+              Contact us
+            </Link>
+          </p>
+        </>
+      )}
+
+      {enrollment === "none" && (
+        <>
+          <p className="type-headline-sm">{formatPrice(course.price_cents)}</p>
           {/* Disabled until the cart exists. */}
           <button
             type="button"

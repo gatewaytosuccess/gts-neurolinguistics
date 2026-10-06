@@ -303,6 +303,8 @@ export type OutlineModule = {
 export type ViewerOutline = {
   course: ViewerCourse;
   access: ViewerAccess;
+  /** Set only when the caller's own enrollment in the course is revoked. */
+  revoked_at: string | null;
   lesson_count: number;
   /** The caller's own completed lessons; `0` unless enrolled. */
   completed_lesson_count: number;
