@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState, type ReactNode } from "react";
 
-import { Markdown } from "@/components/markdown";
+import { LessonContent } from "@/components/lesson-content";
 import type { LessonFileKind } from "@/lib/api";
 
 import { splitDuration, type LessonEditorState } from "../_lib/lesson-editor";
@@ -55,6 +55,7 @@ export function LessonEditorForm({
     minutes: values.minutes,
     seconds: values.seconds,
   });
+  const [previewing, setPreviewing] = useState(false);
   const [syncedState, setSyncedState] = useState(state);
   if (syncedState !== state) {
     setSyncedState(state);
@@ -63,15 +64,39 @@ export function LessonEditorForm({
       minutes: state.values.minutes,
       seconds: state.values.seconds,
     });
+    // Field errors show beside their fields, which the preview hides.
+    if (state.errors.title || state.errors.body || state.errors.duration) {
+      setPreviewing(false);
+    }
   }
-  const [previewing, setPreviewing] = useState(false);
 
   // Read from the chosen video, then saved with its key.
   const videoDuration = useRef<Promise<number | null>>(Promise.resolve(null));
 
   return (
     // Fields read their defaults from `state`: React resets the form after every submission.
-    <form action={formAction} className="mt-xl flex flex-col gap-2xl">
+    <form
+      action={formAction}
+      // A hidden field can't show the browser's validation message.
+      onInvalidCapture={() => setPreviewing(false)}
+      className="mt-xl flex flex-col gap-2xl"
+    >
+      <div
+        role="group"
+        aria-label="Lesson view"
+        className="flex self-start rounded-sm border border-border-strong"
+      >
+        <ToggleButton
+          pressed={!previewing}
+          onClick={() => setPreviewing(false)}
+        >
+          Edit
+        </ToggleButton>
+        <ToggleButton pressed={previewing} onClick={() => setPreviewing(true)}>
+          Preview
+        </ToggleButton>
+      </div>
+
       {errors.form && (
         <p
           role="alert"
@@ -84,168 +109,157 @@ export function LessonEditorForm({
         <PublishProblems refused="edit" problems={state.problems} />
       )}
 
-      <section
-        aria-labelledby="lesson-details-heading"
-        className="measure flex flex-col gap-lg"
-      >
-        <h2 id="lesson-details-heading" className="type-headline-sm">
-          Details
-        </h2>
-
-        <div>
-          <label htmlFor="lesson-title" className="type-label-md block">
-            Title
-          </label>
-          <input
-            id="lesson-title"
-            name="title"
-            type="text"
-            required
-            maxLength={255}
-            defaultValue={values.title}
-            className={`${fieldClassName} ${borderClassName(errors.title)}`}
-            {...(errors.title && {
-              "aria-invalid": true,
-              "aria-describedby": "lesson-title-error",
-            })}
-          />
-          <FieldErrors id="lesson-title-error" errors={errors.title} />
-        </div>
-
-        <fieldset
-          aria-describedby={describedBy("lesson-duration", errors.duration)}
+      {previewing && (
+        <section
+          aria-label="Lesson preview"
+          className="max-w-[960px] rounded-sm border border-rule bg-paper-raised p-md"
         >
-          <legend className="type-label-md">Duration</legend>
-          <div className="flex flex-wrap gap-md">
-            <DurationPart
-              name="minutes"
-              label="Minutes"
-              value={duration.minutes}
-              onChange={(minutes) => setDuration({ ...duration, minutes })}
-              errors={errors.duration}
+          <LessonContent
+            lesson={{
+              title: values.title,
+              body,
+              video_url: files.videoUrl,
+              slides_url: files.slidesUrl,
+            }}
+            tone="light"
+          />
+        </section>
+      )}
+
+      {/* Hidden, not unmounted, while previewing: the fields still submit and
+          an upload in progress carries on. */}
+      <div hidden={previewing} className="flex flex-col gap-2xl">
+        <section
+          aria-labelledby="lesson-details-heading"
+          className="measure flex flex-col gap-lg"
+        >
+          <h2 id="lesson-details-heading" className="type-headline-sm">
+            Details
+          </h2>
+
+          <div>
+            <label htmlFor="lesson-title" className="type-label-md block">
+              Title
+            </label>
+            <input
+              id="lesson-title"
+              name="title"
+              type="text"
+              required
+              maxLength={255}
+              defaultValue={values.title}
+              className={`${fieldClassName} ${borderClassName(errors.title)}`}
+              {...(errors.title && {
+                "aria-invalid": true,
+                "aria-describedby": "lesson-title-error",
+              })}
             />
-            <DurationPart
-              name="seconds"
-              label="Seconds"
-              value={duration.seconds}
-              onChange={(seconds) => setDuration({ ...duration, seconds })}
-              errors={errors.duration}
-            />
+            <FieldErrors id="lesson-title-error" errors={errors.title} />
           </div>
+
+          <fieldset
+            aria-describedby={describedBy("lesson-duration", errors.duration)}
+          >
+            <legend className="type-label-md">Duration</legend>
+            <div className="flex flex-wrap gap-md">
+              <DurationPart
+                name="minutes"
+                label="Minutes"
+                value={duration.minutes}
+                onChange={(minutes) => setDuration({ ...duration, minutes })}
+                errors={errors.duration}
+              />
+              <DurationPart
+                name="seconds"
+                label="Seconds"
+                value={duration.seconds}
+                onChange={(seconds) => setDuration({ ...duration, seconds })}
+                errors={errors.duration}
+              />
+            </div>
+            <p
+              id="lesson-duration-hint"
+              className="type-caption mt-xs text-meta-text"
+            >
+              Filled in when a video is uploaded. Leave both blank if you
+              don&rsquo;t know it yet.
+            </p>
+            <FieldErrors id="lesson-duration-error" errors={errors.duration} />
+          </fieldset>
+
+          <div className="flex items-start gap-sm">
+            <input
+              id="lesson-is-preview"
+              name="is_preview"
+              type="checkbox"
+              defaultChecked={values.isPreview}
+              aria-describedby="lesson-is-preview-hint"
+              className="mt-xs size-4 accent-primary"
+            />
+            <div>
+              <label htmlFor="lesson-is-preview" className="type-label-md">
+                Preview lesson
+              </label>
+              <p
+                id="lesson-is-preview-hint"
+                className="type-caption text-meta-text"
+              >
+                Anyone can open it without being enrolled, to sample the course.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <LessonFile
+          kind="video"
+          url={files.videoUrl}
+          requestUpload={() => files.requestUpload("video")}
+          onChoose={(file) => {
+            videoDuration.current = readVideoDuration(file).then((seconds) => {
+              if (seconds !== null) setDuration(splitDuration(seconds));
+              return seconds;
+            });
+          }}
+          save={async (key) =>
+            files.save("video", key, (await videoDuration.current) ?? undefined)
+          }
+          remove={async () => {
+            const result = await files.save("video", "", null);
+            if (!result.error) setDuration(splitDuration(null));
+            return result;
+          }}
+        />
+
+        <LessonFile
+          kind="slides"
+          url={files.slidesUrl}
+          requestUpload={() => files.requestUpload("slides")}
+          save={(key) => files.save("slides", key)}
+          remove={() => files.save("slides", "")}
+        />
+
+        <section aria-labelledby="lesson-body-heading" className="measure">
+          <h2 id="lesson-body-heading" className="type-headline-sm">
+            <label htmlFor="lesson-body">Body</label>
+          </h2>
+          <textarea
+            id="lesson-body"
+            name="body"
+            rows={16}
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            aria-describedby={describedBy("lesson-body", errors.body)}
+            className={`${fieldClassName} mt-md font-mono ${borderClassName(errors.body)}`}
+          />
           <p
-            id="lesson-duration-hint"
+            id="lesson-body-hint"
             className="type-caption mt-xs text-meta-text"
           >
-            Filled in when a video is uploaded. Leave both blank if you
-            don&rsquo;t know it yet.
+            Markdown. HTML is shown as text, not rendered.
           </p>
-          <FieldErrors id="lesson-duration-error" errors={errors.duration} />
-        </fieldset>
-
-        <div className="flex items-start gap-sm">
-          <input
-            id="lesson-is-preview"
-            name="is_preview"
-            type="checkbox"
-            defaultChecked={values.isPreview}
-            aria-describedby="lesson-is-preview-hint"
-            className="mt-xs size-4 accent-primary"
-          />
-          <div>
-            <label htmlFor="lesson-is-preview" className="type-label-md">
-              Preview lesson
-            </label>
-            <p
-              id="lesson-is-preview-hint"
-              className="type-caption text-meta-text"
-            >
-              Anyone can open it without being enrolled, to sample the course.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <LessonFile
-        kind="video"
-        url={files.videoUrl}
-        requestUpload={() => files.requestUpload("video")}
-        onChoose={(file) => {
-          videoDuration.current = readVideoDuration(file).then((seconds) => {
-            if (seconds !== null) setDuration(splitDuration(seconds));
-            return seconds;
-          });
-        }}
-        save={async (key) =>
-          files.save("video", key, (await videoDuration.current) ?? undefined)
-        }
-        remove={async () => {
-          const result = await files.save("video", "", null);
-          if (!result.error) setDuration(splitDuration(null));
-          return result;
-        }}
-      />
-
-      <LessonFile
-        kind="slides"
-        url={files.slidesUrl}
-        requestUpload={() => files.requestUpload("slides")}
-        save={(key) => files.save("slides", key)}
-        remove={() => files.save("slides", "")}
-      />
-
-      <section aria-labelledby="lesson-body-heading" className="measure">
-        <div className="flex flex-wrap items-end justify-between gap-md">
-          <h2 id="lesson-body-heading" className="type-headline-sm">
-            Body
-          </h2>
-          <div
-            role="group"
-            aria-label="Body view"
-            className="flex rounded-sm border border-border-strong"
-          >
-            <ToggleButton
-              pressed={!previewing}
-              onClick={() => setPreviewing(false)}
-            >
-              Write
-            </ToggleButton>
-            <ToggleButton
-              pressed={previewing}
-              onClick={() => setPreviewing(true)}
-            >
-              Preview
-            </ToggleButton>
-          </div>
-        </div>
-
-        <label htmlFor="lesson-body" className="sr-only">
-          Body
-        </label>
-        <textarea
-          id="lesson-body"
-          name="body"
-          rows={16}
-          // Hidden, not unmounted, while previewing: it still submits with the form.
-          hidden={previewing}
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          aria-describedby={describedBy("lesson-body", errors.body)}
-          className={`${fieldClassName} mt-md font-mono ${borderClassName(errors.body)}`}
-        />
-        {previewing && (
-          <div className="mt-md min-h-[200px] rounded-sm border border-rule bg-paper-raised p-md">
-            {body.trim() ? (
-              <Markdown>{body}</Markdown>
-            ) : (
-              <p className="type-body-md text-meta-text">Nothing to preview.</p>
-            )}
-          </div>
-        )}
-        <p id="lesson-body-hint" className="type-caption mt-xs text-meta-text">
-          Markdown. HTML is shown as text, not rendered.
-        </p>
-        <FieldErrors id="lesson-body-error" errors={errors.body} />
-      </section>
+          <FieldErrors id="lesson-body-error" errors={errors.body} />
+        </section>
+      </div>
 
       <div className="flex flex-wrap items-center gap-md">
         <button
