@@ -2,21 +2,43 @@ from rest_framework import serializers
 
 from courses import lesson_files
 from courses.models import Course, Lesson, Module
-from courses.serializers import PublicLessonSerializer
+from courses.serializers import PublicLessonSerializer, PublicUrlField
 
 from .access import is_locked
 from .models import Enrollment, EnrollmentSource, EnrollmentStatus
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
-    """Expects ``course`` to be select-related."""
+    """Expects ``course`` select-related, the ``with_progress`` annotations, and
+    ``continue_lesson_id`` and ``continue_lesson_title`` set on each enrollment.
+    """
 
     course_id = serializers.UUIDField(read_only=True)
     course_slug = serializers.SlugField(source="course.slug", read_only=True)
+    course_title = serializers.CharField(source="course.title", read_only=True)
+    course_thumbnail_url = PublicUrlField(source="course.thumbnail_key")
+    lesson_count = serializers.IntegerField(read_only=True)
+    completed_lesson_count = serializers.IntegerField(read_only=True)
+    last_activity_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    continue_lesson_id = serializers.UUIDField(read_only=True, allow_null=True)
+    continue_lesson_title = serializers.CharField(read_only=True, allow_null=True)
 
     class Meta:
         model = Enrollment
-        fields = ["id", "course_id", "course_slug", "source", "enrolled_at"]
+        fields = [
+            "id",
+            "course_id",
+            "course_slug",
+            "course_title",
+            "course_thumbnail_url",
+            "source",
+            "enrolled_at",
+            "lesson_count",
+            "completed_lesson_count",
+            "last_activity_at",
+            "continue_lesson_id",
+            "continue_lesson_title",
+        ]
         read_only_fields = fields
 
 

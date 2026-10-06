@@ -5,6 +5,7 @@ from django.db.models import (
     BooleanField,
     Case,
     ExpressionWrapper,
+    F,
     IntegerField,
     Prefetch,
     Q,
@@ -26,7 +27,7 @@ from users.permissions import IsAdmin
 
 from .access import Access, is_locked, viewable_course
 from .models import Enrollment, EnrollmentStatus, LessonProgress, ProgressStatus
-from .progress import continue_lesson_id, curriculum_order
+from .progress import continue_lesson_id, continue_lesson_ids, curriculum_order
 from .serializers import (
     AdminEnrollmentGrantSerializer,
     AdminEnrollmentSerializer,
@@ -43,16 +44,29 @@ logger = logging.getLogger(__name__)
 class MyEnrollmentListView(generics.ListAPIView):
     """The requester's active enrollments, drafts included.
 
-    Unpaginated: the catalog matches every card against the full list.
+    Most recent activity first, then courses not yet started, newest enrollment
+    first. Unpaginated: the catalog matches every card against the full list.
     """
 
     serializer_class = EnrollmentSerializer
     pagination_class = None
 
     def get_queryset(self):
-        return Enrollment.objects.filter(
-            user=self.request.user, status=EnrollmentStatus.ACTIVE
-        ).select_related("course")
+        return (
+            Enrollment.objects.filter(user=self.request.user, status=EnrollmentStatus.ACTIVE)
+            .select_related("course")
+            .with_progress()
+            .order_by(F("last_activity_at").desc(nulls_last=True), "-enrolled_at")
+        )
+
+    def list(self, request):
+        enrollments = list(self.get_queryset())
+        continues = continue_lesson_ids(request.user, [row.course_id for row in enrollments])
+        titles = dict(Lesson.objects.filter(pk__in=continues.values()).values_list("pk", "title"))
+        for enrollment in enrollments:
+            enrollment.continue_lesson_id = continues[enrollment.course_id]
+            enrollment.continue_lesson_title = titles.get(enrollment.continue_lesson_id)
+        return Response(self.get_serializer(enrollments, many=True).data)
 
 
 class LessonOutlineView(APIView):
