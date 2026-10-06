@@ -14,6 +14,7 @@ const KINDS = {
     hint: "MP4, up to 2 GB.",
     uploadLabel: "Upload video",
     empty: "No video yet.",
+    present: "Video uploaded.",
   },
   slides: {
     title: "Slides",
@@ -21,6 +22,7 @@ const KINDS = {
     hint: "PDF, up to 100 MB.",
     uploadLabel: "Upload slides",
     empty: "No slides yet.",
+    present: "Slides uploaded.",
   },
 } as const;
 
@@ -44,8 +46,8 @@ export function readVideoDuration(file: File): Promise<number | null> {
 }
 
 /**
- * A lesson's video or slides: a preview, then Upload or Replace and Remove.
- * Rendered inside the lesson form, so it holds no form of its own.
+ * A lesson's video or slides: whether there is one, then Upload or Replace
+ * and Remove. Rendered inside the lesson form, so it holds no form of its own.
  */
 export function LessonFile({
   kind,
@@ -63,7 +65,7 @@ export function LessonFile({
   remove: () => Promise<UploadResult>;
   onChoose?: (file: File) => void;
 }) {
-  const { title, accept, hint, uploadLabel, empty } = KINDS[kind];
+  const { title, accept, hint, uploadLabel, empty, present } = KINDS[kind];
   const [removing, startRemoving] = useTransition();
   const [removeError, setRemoveError] = useState<string>();
   const headingId = `lesson-${kind}-heading`;
@@ -88,22 +90,10 @@ export function LessonFile({
           <p className="type-body-sm rounded-sm border border-dashed border-rule px-sm py-md text-meta-text">
             {empty}
           </p>
-        ) : kind === "video" ? (
-          <video
-            src={url}
-            controls
-            preload="metadata"
-            className="aspect-video w-full rounded-xs bg-paper-dim"
-          />
         ) : (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="type-label-md text-primary hover:underline"
-          >
-            Open the slides (PDF)
-          </a>
+          <p className="type-body-sm rounded-sm border border-rule px-sm py-md text-accent-strong">
+            {present}
+          </p>
         )}
 
         <div className="flex flex-wrap items-start gap-md">
