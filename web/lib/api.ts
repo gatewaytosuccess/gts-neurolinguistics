@@ -481,6 +481,20 @@ export async function saveLessonProgress(
   );
 }
 
+/**
+ * Starts a Stripe Checkout for one course and returns the Stripe page to send
+ * the signed-in user to. Throws `ApiError` with status 409 while they hold an
+ * active enrollment in it, 404 for an unknown or draft course, 502 if Stripe
+ * refuses, and on any other failure; a suspended account's passes
+ * `isAccountSuspended`.
+ */
+export async function startCheckout(slug: string): Promise<{ url: string }> {
+  return apiFetch<{ url: string }>("/api/checkout/", {
+    method: "POST",
+    body: JSON.stringify({ course: slug }),
+  });
+}
+
 export const COURSE_SORTS = ["newest", "price_asc", "price_desc"] as const;
 
 export type CourseSort = (typeof COURSE_SORTS)[number];
@@ -938,7 +952,7 @@ export async function fetchAdminUsers({
   return apiFetch<Paginated<AdminUserSummary>>(`/api/admin/users/${query}`);
 }
 
-export type OrderStatus = "pending" | "paid" | "refunded" | "failed";
+export type OrderStatus = "pending" | "paid" | "refunded" | "expired";
 
 export type AdminUserOrder = {
   id: string;

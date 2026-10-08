@@ -183,7 +183,10 @@ Dev uses Stripe's test mode. Every call to the Stripe API goes through
 
 1. In the Stripe dashboard, with test mode on, copy the secret key
    (`sk_test_...`) from *Developers → API keys* into `STRIPE_SECRET_KEY`.
-2. Install the [Stripe CLI](https://docs.stripe.com/stripe-cli), run
+2. Under *Settings → Payment methods*, leave only Cards and the wallets (Apple
+   Pay, Google Pay) on. Checkout offers whatever is enabled there, and a delayed
+   method such as a bank debit completes a session before it is paid.
+3. Install the [Stripe CLI](https://docs.stripe.com/stripe-cli), run
    `stripe login` once, then forward events to the local API:
 
    ```bash
@@ -198,7 +201,7 @@ Dev uses Stripe's test mode. Every call to the Stripe API goes through
    It prints a `whsec_...` signing secret: put it in `STRIPE_WEBHOOK_SECRET` and
    restart `runserver`. The secret stays the same across `stripe listen` runs on
    the same machine.
-3. With the forwarder and `runserver` both running, send a test event:
+4. With the forwarder and `runserver` both running, send a test event:
 
    ```bash
    stripe trigger checkout.session.completed

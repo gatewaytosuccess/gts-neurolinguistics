@@ -5,6 +5,11 @@ import pytest
 import stripe
 from django.urls import reverse
 
+from commerce.models import OrderStatus
+from enrollments.models import Enrollment
+
+from .helpers import make_course, make_user, paid_session, pending_order
+
 SECRET = "whsec_a-test-signing-secret"
 
 
@@ -31,9 +36,9 @@ def post_event(client):
     return send
 
 
-def event(event_type="checkout.session.completed"):
+def event(event_type="checkout.session.completed", obj=None):
     return json.dumps(
-        {"id": "evt_test", "object": "event", "type": event_type, "data": {"object": {}}}
+        {"id": "evt_test", "object": "event", "type": event_type, "data": {"object": obj or {}}}
     )
 
 
@@ -72,11 +77,44 @@ class TestPayload:
         assert response.status_code == 400
         assert response.json() == {"detail": "Malformed payload."}
 
-    @pytest.mark.parametrize(
-        "event_type",
-        ["checkout.session.completed", "checkout.session.expired", "charge.refunded"],
-    )
-    def test_acknowledges_a_valid_event(self, post_event, event_type):
+    @pytest.mark.parametrize("event_type", ["checkout.session.expired", "charge.refunded"])
+    def test_acknowledges_an_event_it_doesnt_handle(self, post_event, event_type):
         response = post_event(event(event_type))
         assert response.status_code == 200
         assert response.json() == {"status": "ignored", "type": event_type}
+
+
+@pytest.mark.django_db
+class TestSessionCompleted:
+    def test_fulfils_the_order(self, post_event, fake_stripe):
+        learner, course = make_user(), make_course()
+        order = pending_order(learner, course)
+
+        response = post_event(event(obj=paid_session(order)))
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok", "order_status": "paid"}
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PAID
+        assert Enrollment.objects.filter(user=learner, course=course, order=order).exists()
+
+    def test_a_redelivery_changes_nothing(self, post_event, fake_stripe):
+        order = pending_order(make_user(), make_course())
+        body = event(obj=paid_session(order))
+        post_event(body)
+
+        response = post_event(body)
+
+        assert response.json() == {"status": "ok", "order_status": "paid"}
+        assert Enrollment.objects.count() == 1
+
+    @pytest.mark.parametrize(
+        "metadata",
+        [{}, {"order_id": "not-a-uuid"}, {"order_id": "00000000-0000-0000-0000-000000000000"}],
+        ids=["missing", "malformed", "unknown"],
+    )
+    def test_acknowledges_a_session_with_no_known_order(self, post_event, metadata):
+        response = post_event(event(obj={"id": "cs_test_x", "metadata": metadata}))
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "unknown"}

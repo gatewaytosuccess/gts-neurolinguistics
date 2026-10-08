@@ -5,6 +5,7 @@ anything a retry can't fix is logged and answered 200.
 
 import json
 import logging
+import uuid
 
 import stripe
 from django.conf import settings
@@ -12,6 +13,9 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+
+from .checkout import fulfil
+from .models import Order
 
 logger = logging.getLogger(__name__)
 
@@ -43,5 +47,28 @@ def stripe_webhook(request):
         return Response({"detail": "Malformed payload."}, status=400)
 
     event_type = event.get("type")
-    logger.debug("Ignoring unhandled Stripe event %s.", event_type)
-    return Response({"status": "ignored", "type": event_type})
+    handler = {"checkout.session.completed": _handle_session_completed}.get(event_type)
+    if handler is None:
+        logger.debug("Ignoring unhandled Stripe event %s.", event_type)
+        return Response({"status": "ignored", "type": event_type})
+
+    return handler((event.get("data") or {}).get("object") or {})
+
+
+def _handle_session_completed(session):
+    order_id = (session.get("metadata") or {}).get("order_id")
+    order = Order.objects.filter(pk=order_id).first() if _is_uuid(order_id) else None
+    if order is None:
+        logger.error("Checkout session %s names no known order.", session.get("id"))
+        return Response({"status": "unknown"})
+
+    order = fulfil(order, session)
+    return Response({"status": "ok", "order_status": order.status})
+
+
+def _is_uuid(value):
+    try:
+        uuid.UUID(str(value))
+    except ValueError:
+        return False
+    return True
