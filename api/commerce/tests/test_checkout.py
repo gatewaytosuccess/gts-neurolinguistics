@@ -78,7 +78,9 @@ class TestStartingACheckout:
                 },
             }
         ]
-        assert params["success_url"] == "https://gts.example.com/learn/neuro-101"
+        assert params["success_url"] == (
+            "https://gts.example.com/checkout/success?session_id={CHECKOUT_SESSION_ID}"
+        )
         assert params["cancel_url"] == "https://gts.example.com/courses/neuro-101"
 
     def test_the_session_expires_in_an_hour(self, client, fake_stripe, learner):
