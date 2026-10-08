@@ -1,6 +1,6 @@
 """
-``User`` mirrors a Clerk user. Only role and status belong to this app; Clerk
-overwrites everything else.
+``User`` mirrors a Clerk user. Only role, status and the Stripe customer belong to
+this app; Clerk overwrites everything else.
 """
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -58,6 +58,7 @@ class User(UUIDModel, AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255, blank=True)
     avatar_url = models.URLField(max_length=500, blank=True)
+    stripe_customer_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.LEARNER)
     status = models.CharField(max_length=20, choices=UserStatus.choices, default=UserStatus.ACTIVE)
     suspended_at = models.DateTimeField(null=True, blank=True)

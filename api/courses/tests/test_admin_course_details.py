@@ -347,25 +347,25 @@ class TestPublishedDescription:
 
 
 class TestPrice:
-    @pytest.mark.parametrize("price_cents", [0, -100])
-    def test_create_refuses_zero_or_below(self, client, admin, price_cents):
+    @pytest.mark.parametrize("price_cents", [49, 1, 0, -100])
+    def test_create_refuses_under_fifty_cents(self, client, admin, price_cents):
         errors = field_errors(post_course(client, price_cents=price_cents))
 
-        assert errors["price_cents"] == ["The price must be greater than 0."]
+        assert errors["price_cents"] == ["The price must be at least $0.50."]
         assert not Course.objects.exists()
 
-    @pytest.mark.parametrize("price_cents", [0, -100])
-    def test_update_refuses_zero_or_below(self, client, admin, price_cents):
+    @pytest.mark.parametrize("price_cents", [49, 1, 0, -100])
+    def test_update_refuses_under_fifty_cents(self, client, admin, price_cents):
         course = make_course("foundations")
 
         errors = field_errors(patch_course(client, course, price_cents=price_cents))
 
-        assert errors["price_cents"] == ["The price must be greater than 0."]
+        assert errors["price_cents"] == ["The price must be at least $0.50."]
         course.refresh_from_db()
         assert course.price_cents == 12900
 
-    def test_accepts_one_cent(self, client, admin):
-        assert create_course(client, price_cents=1)["price_cents"] == 1
+    def test_accepts_fifty_cents(self, client, admin):
+        assert create_course(client, price_cents=50)["price_cents"] == 50
 
     def test_refuses_a_price_too_large_to_store(self, client, admin):
         assert "price_cents" in field_errors(post_course(client, price_cents=2**31))

@@ -10,6 +10,7 @@ is the only client; Django serves no templates apart from the admin.
 - Clerk for authentication — Django verifies Clerk session JWTs, it does not
   own passwords
 - Amazon S3 for lesson media and thumbnails, with CloudFront serving thumbnails
+- Stripe Checkout for payments
 
 ## Layout
 
@@ -25,7 +26,7 @@ api/
   users/             custom User model, Clerk JWT authentication, Clerk webhook, IsAdmin
   courses/           Course -> Module -> Lesson
   enrollments/       Enrollment, LessonProgress
-  commerce/          Cart, CartItem, Order, OrderItem, Coupon
+  commerce/          Cart, CartItem, Order, OrderItem, Coupon, the Stripe API module, Stripe webhook
   reviews/           Review
   .venv/             virtualenv (gitignored)
   .env               local secrets (gitignored) — see .env.example
@@ -82,6 +83,9 @@ enrollments: grant those in Django admin.
 - `GET /api/health/` — liveness plus a database connection check
 - `GET /api/users/me/` — the signed-in user's account row
 - `POST /api/webhooks/clerk/` — Clerk `user.*` events, Svix-signed
+- `POST /api/webhooks/stripe/` — Stripe events, signed with `STRIPE_WEBHOOK_SECRET`. Answers 503
+  with no secret configured and 400 for a missing or invalid signature or a malformed body; every
+  event type is acknowledged with `{"status": "ignored"}` for now
 - `GET /api/admin/courses/` — every course, drafts included; admins only
 - `POST /api/admin/courses/` — create a draft course; admins only
 - `GET`, `PATCH`, `DELETE /api/admin/courses/<id>/` — a course's details; `DELETE` answers 409 for
@@ -171,3 +175,37 @@ rules on deleted and suspended accounts.
 
 DRF defaults to `IsAuthenticated`, so new views are private unless they opt out
 with `AllowAny` (public catalog, preview lessons, blog).
+
+## Stripe
+
+Dev uses Stripe's test mode. Every call to the Stripe API goes through
+`commerce/stripe_api.py`; tests replace its functions and never reach Stripe.
+
+1. In the Stripe dashboard, with test mode on, copy the secret key
+   (`sk_test_...`) from *Developers → API keys* into `STRIPE_SECRET_KEY`.
+2. Install the [Stripe CLI](https://docs.stripe.com/stripe-cli), run
+   `stripe login` once, then forward events to the local API:
+
+   ```bash
+   stripe listen \
+     --events checkout.session.completed,checkout.session.expired,charge.refunded,charge.dispute.created \
+     --forward-to localhost:8000/api/webhooks/stripe/
+   ```
+
+   The CLI requires `--events`. Keep the list in step with the event types the
+   webhook handles.
+
+   It prints a `whsec_...` signing secret: put it in `STRIPE_WEBHOOK_SECRET` and
+   restart `runserver`. The secret stays the same across `stripe listen` runs on
+   the same machine.
+3. With the forwarder and `runserver` both running, send a test event:
+
+   ```bash
+   stripe trigger checkout.session.completed
+   ```
+
+   `runserver` logs `POST /api/webhooks/stripe/` with a 200 for each event, and
+   the forwarder shows `[200]` next to it.
+
+Both keys are server-only and belong in `api/.env`; the Next.js app never talks
+to Stripe directly.
