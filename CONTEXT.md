@@ -58,7 +58,7 @@ _Avoid_: Restore, undelete, reactivate
 ### Courses and access
 
 **Course**:
-A purchasable unit of teaching, made of modules, which are made of lessons.
+A purchasable unit of teaching, made of modules, which are made of lessons. Every course has a price; giving one away is a comp grant.
 
 **Curriculum**:
 A course's modules and lessons, in order.
@@ -97,7 +97,7 @@ Bringing a revoked enrollment back exactly as it was — same source, same order
 _Avoid_: Re-grant, re-enroll
 
 **Enrolled**:
-Holding an active enrollment in a course, whatever its source. A revoked enrollment leaves the user not enrolled; buying the course again reactivates that enrollment rather than creating a second one.
+Holding an active enrollment in a course, whatever its source. A revoked enrollment leaves the user not enrolled; buying the course again reactivates that enrollment rather than creating a second one, and from then on it belongs to the new order, even if it began as a grant. Someone already enrolled can't buy the course.
 _Avoid_: Owned, purchased
 
 **Catalog**:
@@ -140,13 +140,27 @@ _Avoid_: Membership, plan, all-access (all-access is marketing copy, not a domai
 A curated set of courses sold together at a discount, as a one-time purchase.
 _Avoid_: Package, collection
 
-**Order**:
-A user's transaction for one or more courses. Distinct from the enrollments it produces: refunding an order and revoking access are separate acts.
-_Avoid_: Payment, receipt, invoice
-
 **Review**:
 A learner's star rating of a course, with optional written words. Only someone enrolled can write one, whatever the source of their enrollment, and only one per course; they can edit or delete it later. It outlives the enrollment: a revoked learner's review stays. An admin can hide a review, and only an admin can bring it back — editing it doesn't.
 _Avoid_: Rating (the number alone), testimonial, comment
+
+### Buying
+
+**Order**:
+A user's transaction for one or more courses, at the prices they had when checkout began. It is **pending** until paid, then **paid**; a checkout left unpaid ends it as **expired**, and a full refund makes it **refunded**. Distinct from the enrollments it produces: refunding an order and revoking access are separate acts.
+_Avoid_: Payment, receipt, invoice, failed (for an unpaid order)
+
+**Checkout**:
+Paying for an order. Starting one creates a pending order and replaces any checkout the user still has open for the same course; leaving it unpaid lets the order expire.
+_Avoid_: Purchase flow, payment page
+
+**Fulfill**:
+Turning a paid order into enrollments. Happens once per order however many times it is attempted; an order for a course the user already bought is refunded instead, and one for a course they hold through a grant takes that enrollment over.
+_Avoid_: Process, complete, provision
+
+**Refund**:
+Returning an order's payment in full, which makes the order refunded. It never revokes access. A partial refund is a goodwill gesture and leaves the order paid.
+_Avoid_: Cancel, chargeback (a dispute raised through the card issuer, not a refund)
 
 ### Marketing
 

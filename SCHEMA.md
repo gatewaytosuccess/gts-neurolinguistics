@@ -37,6 +37,7 @@
 | email | string | UK, not null | |
 | name | string | not null | |
 | avatar_url | string | nullable | |
+| stripe_customer_id | string | UK, nullable | Created at the user's first checkout |
 | role | enum | not null, default `learner` | `learner \| instructor \| admin` |
 | status | enum | not null, default `active` | `active \| suspended \| deleted` — anything other than `active` blocks login. See below |
 | suspended_at | timestamp | nullable | Set when a user is suspended |
@@ -132,11 +133,12 @@ Unique: `(user_id, lesson_id)` — one progress row per learner per lesson.
 | id | uuid | PK | |
 | user_id | uuid | FK → USERS.id, not null | |
 | coupon_id | uuid | FK → COUPONS.id, nullable | Coupon applied to this order, if any |
-| status | enum | not null | `pending \| paid \| refunded \| failed` |
+| status | enum | not null | `pending \| paid \| refunded \| expired` — `expired` is a checkout left unpaid |
 | subtotal_cents | int | not null | |
 | discount_cents | int | not null, default `0` | Snapshot of the discount actually applied |
 | total_cents | int | not null | |
-| payment_ref | string | nullable | Provider transaction id |
+| payment_ref | string | nullable | Stripe Checkout session id |
+| receipt_url | string | nullable | Stripe's hosted receipt, saved when the order is fulfilled |
 | created_at | timestamp | not null | |
 | updated_at | timestamp | not null | |
 

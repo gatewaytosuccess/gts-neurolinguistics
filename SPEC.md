@@ -161,6 +161,6 @@ ______________________________________________________________________
 
 - **Auth**: role-based access control (learner vs. admin, possibly instructor) rather than a fully separate admin app
 - **Content storage**: separate structured storage for video (streaming service like Mux/Cloudflare Stream), slides (PDF/image storage), and text (rich text/markdown in DB) rather than one blob format
-- **Payments**: Square (or similar) for one-time and subscription billing, plus coupon logic
+- **Payments**: Stripe for one-time and subscription billing, plus coupon logic
 - **Progress tracking**: a per-user, per-lesson completion table drives the progress bars on the landing/course pages
 - **Unified lesson component**: build the lesson viewer as a single component that switches renderer based on content type, so the admin content editor and learner viewer stay in sync
