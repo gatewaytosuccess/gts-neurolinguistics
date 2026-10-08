@@ -9,7 +9,7 @@ from courses.models import CourseStatus
 from enrollments.models import Enrollment, EnrollmentSource, EnrollmentStatus
 from users.authentication import ClerkAuthentication
 
-from .helpers import make_course, make_user
+from .helpers import make_course, make_user, pending_order
 
 pytestmark = pytest.mark.django_db
 
@@ -99,6 +99,66 @@ class TestStartingACheckout:
         )
 
         assert checkout(client, course.slug).status_code == 201
+
+
+class TestReplacingAnOpenCheckout:
+    def test_a_second_checkout_expires_the_first(self, client, fake_stripe, learner):
+        course = make_course()
+        checkout(client, course.slug)
+        first = Order.objects.get(user=learner)
+
+        checkout(client, course.slug)
+
+        first.refresh_from_db()
+        assert first.status == OrderStatus.EXPIRED
+        assert fake_stripe.named("expire_checkout_session") == [
+            ("expire_checkout_session", (first.payment_ref,), {})
+        ]
+        second = Order.objects.exclude(pk=first.pk).get(user=learner)
+        assert second.status == OrderStatus.PENDING
+
+    def test_a_checkout_for_another_course_stays_open(self, client, fake_stripe, learner):
+        other = pending_order(learner, make_course(slug="other"))
+
+        checkout(client, make_course(slug="neuro-101").slug)
+
+        other.refresh_from_db()
+        assert other.status == OrderStatus.PENDING
+        assert fake_stripe.named("expire_checkout_session") == []
+
+    def test_another_users_checkout_stays_open(self, client, fake_stripe, learner):
+        course = make_course()
+        someone_else = make_user(email="other@example.com", clerk_user_id="user_other")
+        theirs = pending_order(someone_else, course)
+
+        checkout(client, course.slug)
+
+        theirs.refresh_from_db()
+        assert theirs.status == OrderStatus.PENDING
+
+    def test_a_session_stripe_wont_expire_leaves_its_order_pending(
+        self, client, fake_stripe, learner
+    ):
+        course = make_course()
+        first = pending_order(learner, course, session_id="cs_test_just_paid")
+        fake_stripe.unexpirable.add(first.payment_ref)
+
+        assert checkout(client, course.slug).status_code == 201
+
+        first.refresh_from_db()
+        assert first.status == OrderStatus.PENDING
+
+    def test_stripe_refusing_the_new_session_leaves_the_first_open(
+        self, client, fake_stripe, learner
+    ):
+        course = make_course()
+        first = pending_order(learner, course)
+        fake_stripe.fail = stripe.APIConnectionError("Stripe is unreachable")
+
+        assert checkout(client, course.slug).status_code == 502
+
+        first.refresh_from_db()
+        assert first.status == OrderStatus.PENDING
 
 
 class TestRefusals:

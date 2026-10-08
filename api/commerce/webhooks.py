@@ -1,6 +1,6 @@
 """
-Stripe retries any non-2xx for days. Return one only for a rejected request;
-anything a retry can't fix is logged and answered 200.
+Stripe retries any non-2xx for days. Return one only for a rejected request or
+a Stripe call that failed; anything a retry can't fix is logged and answered 200.
 """
 
 import json
@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .checkout import fulfil
+from .checkout import expire, fulfil
 from .models import Order
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,10 @@ def stripe_webhook(request):
         return Response({"detail": "Malformed payload."}, status=400)
 
     event_type = event.get("type")
-    handler = {"checkout.session.completed": _handle_session_completed}.get(event_type)
+    handler = {
+        "checkout.session.completed": _handle_session_completed,
+        "checkout.session.expired": _handle_session_expired,
+    }.get(event_type)
     if handler is None:
         logger.debug("Ignoring unhandled Stripe event %s.", event_type)
         return Response({"status": "ignored", "type": event_type})
@@ -56,14 +59,33 @@ def stripe_webhook(request):
 
 
 def _handle_session_completed(session):
+    order = _session_order(session)
+    if order is None:
+        return Response({"status": "unknown"})
+
+    try:
+        order = fulfil(order, session)
+    except stripe.StripeError:
+        logger.exception("Could not fulfil order %s; asking Stripe to retry.", order.pk)
+        return Response({"detail": "Stripe is unavailable."}, status=503)
+    return Response({"status": "ok", "order_status": order.status})
+
+
+def _handle_session_expired(session):
+    order = _session_order(session)
+    if order is None:
+        return Response({"status": "unknown"})
+
+    order = expire(order, session)
+    return Response({"status": "ok", "order_status": order.status})
+
+
+def _session_order(session):
     order_id = (session.get("metadata") or {}).get("order_id")
     order = Order.objects.filter(pk=order_id).first() if _is_uuid(order_id) else None
     if order is None:
         logger.error("Checkout session %s names no known order.", session.get("id"))
-        return Response({"status": "unknown"})
-
-    order = fulfil(order, session)
-    return Response({"status": "ok", "order_status": order.status})
+    return order
 
 
 def _is_uuid(value):
