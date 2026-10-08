@@ -97,7 +97,8 @@ export default async function CoursePage({
   searchParams,
 }: PageProps<"/courses/[slug]">) {
   const { slug } = await params;
-  const reviewsPage = parsePage((await searchParams).reviews);
+  const query = await searchParams;
+  const reviewsPage = parsePage(query.reviews);
   const [course, reviews, [outlineResult, currentUser, myReview]] =
     await Promise.all([
       loadCourse(slug),
@@ -152,6 +153,7 @@ export default async function CoursePage({
           course={course}
           enrollment={enrollment}
           isAdmin={isAdmin}
+          checkoutUnavailable={query.checkout === "unavailable"}
           className="min-w-0 md:sticky md:top-lg md:col-span-5 md:col-start-8 md:row-span-2 md:row-start-1 md:self-start lg:col-span-4 lg:col-start-9"
         />
 

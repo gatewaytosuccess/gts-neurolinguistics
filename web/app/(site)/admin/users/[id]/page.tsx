@@ -209,7 +209,7 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Pending",
   paid: "Paid",
   refunded: "Refunded",
-  failed: "Failed",
+  expired: "Expired",
 };
 
 function OrderTable({ orders }: { orders: AdminUserOrder[] }) {

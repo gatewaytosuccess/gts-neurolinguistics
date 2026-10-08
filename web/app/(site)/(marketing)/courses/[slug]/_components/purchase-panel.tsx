@@ -9,11 +9,14 @@ export function PurchasePanel({
   course,
   enrollment,
   isAdmin,
+  checkoutUnavailable,
   className = "",
 }: {
   course: CourseDetail;
   enrollment: EnrollmentState;
   isAdmin: boolean;
+  /** The last checkout couldn't be started. */
+  checkoutUnavailable: boolean;
   className?: string;
 }) {
   return (
@@ -46,11 +49,18 @@ export function PurchasePanel({
       {enrollment === "revoked" && (
         <>
           <p className="type-headline-sm">Your access has ended</p>
-          <p className="type-body-sm mt-sm">
-            Your progress is saved. If your access is restored, you&rsquo;ll
-            pick up where you left off.
+          <p className="type-data-md mt-sm">
+            {formatPrice(course.price_cents)}
           </p>
-          <p className="type-body-sm mt-sm">
+          <BuyButton
+            slug={course.slug}
+            label="Buy again"
+            unavailable={checkoutUnavailable}
+          />
+          <p className="type-caption mt-xs text-meta-text">
+            Your progress is saved.
+          </p>
+          <p className="type-body-sm mt-md">
             Questions?{" "}
             <Link
               href="/contact"
@@ -65,18 +75,11 @@ export function PurchasePanel({
       {enrollment === "none" && (
         <>
           <p className="type-headline-sm">{formatPrice(course.price_cents)}</p>
-          {/* Disabled until the cart exists. */}
-          <button
-            type="button"
-            disabled
-            aria-describedby="purchase-note"
-            className="button-primary mt-md"
-          >
-            Add to cart
-          </button>
-          <p id="purchase-note" className="type-caption mt-xs text-meta-text">
-            Enrollment opens soon.
-          </p>
+          <BuyButton
+            slug={course.slug}
+            label="Buy now"
+            unavailable={checkoutUnavailable}
+          />
         </>
       )}
 
@@ -93,6 +96,36 @@ export function PurchasePanel({
         </p>
       )}
     </aside>
+  );
+}
+
+function BuyButton({
+  slug,
+  label,
+  unavailable,
+}: {
+  slug: string;
+  label: string;
+  unavailable: boolean;
+}) {
+  return (
+    <>
+      {/* Not <Link>: a prefetch of /checkout would start a checkout. */}
+      <a
+        href={`/checkout?course=${encodeURIComponent(slug)}`}
+        className="button-primary mt-md"
+      >
+        {label}
+      </a>
+      {unavailable && (
+        <p
+          role="alert"
+          className="type-body-sm mt-sm rounded-sm bg-warning-subtle px-sm py-sm text-warning"
+        >
+          Payment is unavailable right now. Please try again in a moment.
+        </p>
+      )}
+    </>
   );
 }
 
