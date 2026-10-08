@@ -204,8 +204,9 @@ class AdminCourseSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "status", "created_at", "updated_at"]
         extra_kwargs = {
             "price_cents": {
-                "min_value": 1,
-                "error_messages": {"min_value": "The price must be greater than 0."},
+                # Stripe's minimum charge in USD.
+                "min_value": 50,
+                "error_messages": {"min_value": "The price must be at least $0.50."},
             },
         }
 

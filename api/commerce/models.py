@@ -10,7 +10,7 @@ class OrderStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     PAID = "paid", "Paid"
     REFUNDED = "refunded", "Refunded"
-    FAILED = "failed", "Failed"
+    EXPIRED = "expired", "Expired"
 
 
 class DiscountType(models.TextChoices):
@@ -71,7 +71,10 @@ class Order(BaseModel):
         default=0, help_text="Snapshot of the discount actually applied."
     )
     total_cents = models.PositiveIntegerField()
-    payment_ref = models.CharField(max_length=255, blank=True, help_text="Provider transaction id.")
+    payment_ref = models.CharField(
+        max_length=255, blank=True, help_text="Stripe Checkout session id."
+    )
+    receipt_url = models.URLField(max_length=500, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "orders"
