@@ -83,6 +83,9 @@ enrollments: grant those in Django admin.
 - `GET /api/health/` — liveness plus a database connection check
 - `GET /api/users/me/` — the signed-in user's account row
 - `POST /api/webhooks/clerk/` — Clerk `user.*` events, Svix-signed
+- `POST /api/checkout/` — starts a Stripe Checkout for `{"course": "<slug>"}` and answers `{url}`
+- `GET /api/checkout/sessions/<session_id>/` — the order a Checkout Session is for, fulfilled
+  first if Stripe reports it paid; 404 unless it is the signed-in user's
 - `POST /api/webhooks/stripe/` — Stripe events, signed with `STRIPE_WEBHOOK_SECRET`. Answers 503
   with no secret configured and 400 for a missing or invalid signature or a malformed body; every
   event type is acknowledged with `{"status": "ignored"}` for now

@@ -495,6 +495,33 @@ export async function startCheckout(slug: string): Promise<{ url: string }> {
   });
 }
 
+export type CheckoutOrder = {
+  id: string;
+  created_at: string;
+  status: OrderStatus;
+  total_cents: number;
+  items: {
+    course_slug: string;
+    course_title: string;
+    unit_price_cents: number;
+  }[];
+};
+
+/**
+ * The order a Stripe Checkout Session paid for, fulfilled first if Stripe
+ * reports it paid; still `pending` while it doesn't, or can't be reached.
+ * Throws `ApiError` with status 404 unless the session is one of the signed-in
+ * user's orders, and on any other failure; a suspended account's passes
+ * `isAccountSuspended`.
+ */
+export async function fetchCheckoutOrder(
+  sessionId: string,
+): Promise<CheckoutOrder> {
+  return apiFetch<CheckoutOrder>(
+    `/api/checkout/sessions/${encodeURIComponent(sessionId)}/`,
+  );
+}
+
 export const COURSE_SORTS = ["newest", "price_asc", "price_desc"] as const;
 
 export type CourseSort = (typeof COURSE_SORTS)[number];

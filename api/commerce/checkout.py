@@ -101,7 +101,8 @@ def session_params(order, items, customer_id, *, landing):
         ],
         "metadata": {"order_id": str(order.pk)},
         "expires_at": int(time.time()) + SESSION_LIFETIME_SECONDS,
-        "success_url": f"{settings.WEB_APP_URL}/learn/{slug}",
+        # Stripe substitutes {CHECKOUT_SESSION_ID} on redirect.
+        "success_url": f"{settings.WEB_APP_URL}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
         "cancel_url": f"{settings.WEB_APP_URL}/courses/{slug}",
     }
 
@@ -150,6 +151,22 @@ def fulfil(order, session):
 
     logger.info("Fulfilled order %s for user %s.", order.pk, order.user_id)
     return order
+
+
+def confirm(order):
+    """Fulfils a ``pending`` order if Stripe now reports its session paid.
+
+    Returns the order as it stands. Any other status returns without calling
+    Stripe, and a pending order stays pending when Stripe can't be reached.
+    """
+    if order.status != OrderStatus.PENDING:
+        return order
+    try:
+        session = stripe_api.retrieve_checkout_session(order.payment_ref).to_dict()
+    except stripe.StripeError:
+        logger.exception("Could not fetch session %s for order %s.", order.payment_ref, order.pk)
+        return order
+    return fulfil(order, session)
 
 
 def receipt_url(session):

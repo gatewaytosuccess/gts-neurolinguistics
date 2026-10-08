@@ -8,7 +8,9 @@ from rest_framework.views import APIView
 
 from courses.models import Course
 
-from .checkout import AlreadyEnrolled, start_checkout
+from .checkout import AlreadyEnrolled, confirm, start_checkout
+from .models import Order
+from .serializers import OrderSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -45,3 +47,16 @@ class CheckoutView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         return Response({"url": url}, status=status.HTTP_201_CREATED)
+
+
+class CheckoutSessionView(APIView):
+    """The order a Checkout Session paid for, fulfilled first if Stripe reports it paid.
+
+    404 unless the session is one of the requesting user's orders. While Stripe
+    hasn't reported payment, or can't be reached, the order comes back ``pending``.
+    """
+
+    def get(self, request, session_id):
+        order = confirm(get_object_or_404(Order, user=request.user, payment_ref=session_id))
+        order = Order.objects.prefetch_related("items__course").get(pk=order.pk)
+        return Response(OrderSerializer(order).data)
