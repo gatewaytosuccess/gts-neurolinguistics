@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Show, UserButton } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 
 import { MastheadLink } from "@/components/masthead-link";
 import { AdminLink } from "@/components/admin-link";
+import { AccountMenu } from "@/components/account-menu";
 
 /*
  * Reads the session, so it renders behind the boundary in `Masthead`. The inner
@@ -32,7 +33,7 @@ export function MastheadAuth() {
       <Suspense fallback={null}>
         <AdminLink />
       </Suspense>
-      <UserButton />
+      <AccountMenu />
     </Show>
   );
 }

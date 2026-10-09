@@ -2,15 +2,15 @@ import logging
 
 import stripe
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers, status
+from rest_framework import generics, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from courses.models import Course
 
 from .checkout import AlreadyEnrolled, confirm, start_checkout
-from .models import Order
-from .serializers import OrderSerializer
+from .models import Order, OrderStatus
+from .serializers import OrderReceiptSerializer, OrderSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -60,3 +60,31 @@ class CheckoutSessionView(APIView):
         order = confirm(get_object_or_404(Order, user=request.user, payment_ref=session_id))
         order = Order.objects.prefetch_related("items__course").get(pk=order.pk)
         return Response(OrderSerializer(order).data)
+
+
+def my_orders(user):
+    """Pending and expired orders are never shown: nothing was bought."""
+    return (
+        Order.objects.filter(user=user, status__in=[OrderStatus.PAID, OrderStatus.REFUNDED])
+        .prefetch_related("items__course")
+        .order_by("-created_at")
+    )
+
+
+class MyOrderListView(generics.ListAPIView):
+    """The requester's paid and refunded orders, newest first. Unpaginated."""
+
+    serializer_class = OrderSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return my_orders(self.request.user)
+
+
+class MyOrderDetailView(generics.RetrieveAPIView):
+    """One of the requester's paid or refunded orders; 404 for any other order."""
+
+    serializer_class = OrderReceiptSerializer
+
+    def get_queryset(self):
+        return my_orders(self.request.user)

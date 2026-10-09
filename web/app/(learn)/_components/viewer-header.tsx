@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { SignInButton, UserButton } from "@clerk/nextjs";
+import { SignInButton } from "@clerk/nextjs";
+
+import { AccountMenu } from "@/components/account-menu";
 
 export function ViewerHeader({
   slug,
@@ -67,7 +69,7 @@ export function ViewerHeader({
           </Link>
         )}
         {signedIn ? (
-          <UserButton />
+          <AccountMenu />
         ) : (
           <SignInButton>
             <button

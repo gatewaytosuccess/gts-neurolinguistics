@@ -495,7 +495,7 @@ export async function startCheckout(slug: string): Promise<{ url: string }> {
   });
 }
 
-export type CheckoutOrder = {
+export type Order = {
   id: string;
   created_at: string;
   status: OrderStatus;
@@ -514,11 +514,38 @@ export type CheckoutOrder = {
  * user's orders, and on any other failure; a suspended account's passes
  * `isAccountSuspended`.
  */
-export async function fetchCheckoutOrder(
-  sessionId: string,
-): Promise<CheckoutOrder> {
-  return apiFetch<CheckoutOrder>(
+export async function fetchCheckoutOrder(sessionId: string): Promise<Order> {
+  return apiFetch<Order>(
     `/api/checkout/sessions/${encodeURIComponent(sessionId)}/`,
+  );
+}
+
+/** An order something was bought with. */
+export type PurchasedOrder = Order & { status: "paid" | "refunded" };
+
+export type OrderReceipt = PurchasedOrder & {
+  subtotal_cents: number;
+  discount_cents: number;
+  /** Blank when Stripe couldn't be reached at fulfilment. */
+  receipt_url: string;
+};
+
+/**
+ * The signed-in user's paid and refunded orders, newest first. Throws on any
+ * failure; a suspended account's `ApiError` passes `isAccountSuspended`.
+ */
+export async function fetchOrders(): Promise<PurchasedOrder[]> {
+  return apiFetch<PurchasedOrder[]>("/api/users/me/orders/");
+}
+
+/**
+ * One of the signed-in user's paid or refunded orders. Throws `ApiError` with
+ * status 404 for a pending or expired order, anyone else's, or a malformed id,
+ * and on any other failure; a suspended account's passes `isAccountSuspended`.
+ */
+export async function fetchOrder(id: string): Promise<OrderReceipt> {
+  return apiFetch<OrderReceipt>(
+    `/api/users/me/orders/${encodeURIComponent(id)}/`,
   );
 }
 

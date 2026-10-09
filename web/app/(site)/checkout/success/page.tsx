@@ -7,7 +7,7 @@ import {
   ApiError,
   fetchCheckoutOrder,
   isAccountSuspended,
-  type CheckoutOrder,
+  type Order,
 } from "@/lib/api";
 import { formatDate, formatPrice } from "@/lib/format";
 
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
  * `null` while the order can't be loaded for a reason a refresh might fix.
  * Throws Next's not-found error on a 404, so it must be awaited in the render path.
  */
-async function loadOrder(sessionId: string): Promise<CheckoutOrder | null> {
+async function loadOrder(sessionId: string): Promise<Order | null> {
   try {
     return await fetchCheckoutOrder(sessionId);
   } catch (error) {
@@ -57,7 +57,7 @@ export default async function CheckoutSuccessPage({
   );
 }
 
-function Confirmed({ order }: { order: CheckoutOrder }) {
+function Confirmed({ order }: { order: Order }) {
   const [first] = order.items;
   const titles = order.items.map((item) => item.course_title).join(", ");
 
@@ -93,7 +93,7 @@ function Confirmed({ order }: { order: CheckoutOrder }) {
   );
 }
 
-function Expired({ order }: { order: CheckoutOrder }) {
+function Expired({ order }: { order: Order }) {
   const [first] = order.items;
 
   return (

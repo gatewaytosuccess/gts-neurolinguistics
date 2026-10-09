@@ -20,3 +20,14 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ["id", "created_at", "status", "total_cents", "items"]
         read_only_fields = fields
+
+
+class OrderReceiptSerializer(OrderSerializer):
+    class Meta(OrderSerializer.Meta):
+        fields = [
+            *OrderSerializer.Meta.fields,
+            "subtotal_cents",
+            "discount_cents",
+            "receipt_url",
+        ]
+        read_only_fields = fields

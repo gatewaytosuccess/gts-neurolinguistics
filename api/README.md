@@ -86,6 +86,9 @@ enrollments: grant those in Django admin.
 - `POST /api/checkout/` — starts a Stripe Checkout for `{"course": "<slug>"}` and answers `{url}`
 - `GET /api/checkout/sessions/<session_id>/` — the order a Checkout Session is for, fulfilled
   first if Stripe reports it paid; 404 unless it is the signed-in user's
+- `GET /api/users/me/orders/` — the signed-in user's paid and refunded orders, newest first
+- `GET /api/users/me/orders/<id>/` — one of those orders with its prices and Stripe `receipt_url`;
+  404 for a pending or expired order or anyone else's
 - `POST /api/webhooks/stripe/` — Stripe events, signed with `STRIPE_WEBHOOK_SECRET`. Answers 503
   with no secret configured and 400 for a missing or invalid signature or a malformed body.
   `checkout.session.completed` fulfils the order and `checkout.session.expired` expires it;
