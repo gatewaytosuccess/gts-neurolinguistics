@@ -9,5 +9,11 @@ urlpatterns = [
         views.CheckoutSessionView.as_view(),
         name="checkout-session",
     ),
+    path("users/me/orders/", views.MyOrderListView.as_view(), name="user-me-orders"),
+    path(
+        "users/me/orders/<uuid:pk>/",
+        views.MyOrderDetailView.as_view(),
+        name="user-me-order",
+    ),
     path("webhooks/stripe/", webhooks.stripe_webhook, name="stripe-webhook"),
 ]
