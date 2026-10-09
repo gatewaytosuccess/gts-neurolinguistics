@@ -68,6 +68,7 @@ class TestStartingACheckout:
         assert params["customer"] == learner.stripe_customer_id
         assert params["client_reference_id"] == str(learner.pk)
         assert params["metadata"] == {"order_id": str(order.pk)}
+        assert params["payment_intent_data"] == {"metadata": {"order_id": str(order.pk)}}
         assert params["line_items"] == [
             {
                 "quantity": 1,

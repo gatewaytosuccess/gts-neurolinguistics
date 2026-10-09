@@ -47,6 +47,11 @@ def retrieve_payment_intent(payment_intent_id):
     return _client().v1.payment_intents.retrieve(payment_intent_id, {"expand": ["latest_charge"]})
 
 
+def retrieve_payment_intent_metadata(payment_intent_id):
+    """The PaymentIntent's metadata as a plain dict."""
+    return _client().v1.payment_intents.retrieve(payment_intent_id).metadata.to_dict()
+
+
 def create_refund(payment_intent_id, *, idempotency_key):
     """Refunds the PaymentIntent in full. A repeated ``idempotency_key`` returns
     the first refund instead of making another."""

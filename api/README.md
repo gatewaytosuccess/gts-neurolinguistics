@@ -87,8 +87,10 @@ enrollments: grant those in Django admin.
 - `GET /api/checkout/sessions/<session_id>/` — the order a Checkout Session is for, fulfilled
   first if Stripe reports it paid; 404 unless it is the signed-in user's
 - `POST /api/webhooks/stripe/` — Stripe events, signed with `STRIPE_WEBHOOK_SECRET`. Answers 503
-  with no secret configured and 400 for a missing or invalid signature or a malformed body; every
-  event type is acknowledged with `{"status": "ignored"}` for now
+  with no secret configured and 400 for a missing or invalid signature or a malformed body.
+  `checkout.session.completed` fulfils the order and `checkout.session.expired` expires it;
+  `charge.refunded` marks a paid order refunded when the refund is full; `charge.dispute.created`
+  is only logged. Other event types are acknowledged with `{"status": "ignored"}`
 - `GET /api/admin/courses/` — every course, drafts included; admins only
 - `POST /api/admin/courses/` — create a draft course; admins only
 - `GET`, `PATCH`, `DELETE /api/admin/courses/<id>/` — a course's details; `DELETE` answers 409 for

@@ -50,3 +50,16 @@ def expired_session(order, **fields):
         "metadata": {"order_id": str(order.pk)},
         **fields,
     }
+
+
+def refunded_charge(amount_refunded=12900, **fields):
+    """The ``charge.refunded`` object Stripe sends for a charge on ``pi_test``."""
+    return {
+        "id": "ch_test",
+        "object": "charge",
+        "amount": 12900,
+        "amount_refunded": amount_refunded,
+        "currency": "usd",
+        "payment_intent": "pi_test",
+        **fields,
+    }
