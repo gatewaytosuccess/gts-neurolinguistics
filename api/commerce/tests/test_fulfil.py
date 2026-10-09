@@ -1,8 +1,10 @@
 import logging
+import threading
 from datetime import timedelta
 
 import pytest
 import stripe
+from django.db import connection
 from django.utils import timezone
 
 from commerce.checkout import fulfil
@@ -103,6 +105,20 @@ class TestFulfilling:
         assert enrollment.source == EnrollmentSource.PURCHASE
         assert enrollment.order == order
 
+    @pytest.mark.parametrize("source", [EnrollmentSource.MANUAL, EnrollmentSource.COMP])
+    def test_an_active_grant_is_taken_over(self, fake_stripe, learner, course, order, source):
+        grant = Enrollment.objects.create(user=learner, course=course, source=source)
+
+        fulfil(order, paid_session(order))
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PAID
+        enrollment = Enrollment.objects.get(user=learner, course=course)
+        assert enrollment.pk == grant.pk
+        assert enrollment.enrolled_at == grant.enrolled_at
+        assert (enrollment.source, enrollment.order) == (EnrollmentSource.PURCHASE, order)
+        assert fake_stripe.named("create_refund") == []
+
     def test_a_course_unpublished_since_checkout_is_still_fulfilled(
         self, fake_stripe, learner, course, order
     ):
@@ -137,15 +153,52 @@ class TestIdempotence:
         assert list(Enrollment.objects.values()) == first_enrollments
         assert len(fake_stripe.named("retrieve_payment_intent")) == 1
 
-    def test_an_active_enrollment_is_left_alone(self, fake_stripe, learner, course, order, caplog):
-        Enrollment.objects.create(user=learner, course=course, source=EnrollmentSource.COMP)
+
+class TestAnEarlierPurchase:
+    @pytest.fixture
+    def bought(self, learner, course):
+        earlier = Order.objects.create(
+            user=learner,
+            status=OrderStatus.PAID,
+            subtotal_cents=course.price_cents,
+            total_cents=course.price_cents,
+        )
+        return Enrollment.objects.create(
+            user=learner, course=course, source=EnrollmentSource.PURCHASE, order=earlier
+        )
+
+    def test_refunds_the_order_in_full(self, fake_stripe, bought, order):
+        fulfil(order, paid_session(order))
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.REFUNDED
+        assert fake_stripe.named("create_refund") == [
+            ("create_refund", ("pi_test",), {"idempotency_key": f"refund-{order.pk}"})
+        ]
+
+    def test_leaves_the_existing_enrollment_as_it_is(self, fake_stripe, bought, order):
         before = list(Enrollment.objects.values())
 
-        with caplog.at_level(logging.WARNING, logger="commerce.checkout"):
-            fulfil(order, paid_session(order))
+        fulfil(order, paid_session(order))
 
         assert list(Enrollment.objects.values()) == before
-        assert "already holds" in caplog.text
+
+    def test_refunds_once_when_run_twice(self, fake_stripe, bought, order):
+        session = paid_session(order)
+
+        fulfil(order, session)
+        fulfil(order, session)
+
+        assert len(fake_stripe.named("create_refund")) == 1
+
+    def test_a_refund_stripe_refuses_leaves_the_order_pending(self, fake_stripe, bought, order):
+        fake_stripe.fail = stripe.APIConnectionError("Stripe is unreachable")
+
+        with pytest.raises(stripe.APIConnectionError):
+            fulfil(order, paid_session(order))
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PENDING
 
 
 class TestRefusals:
@@ -187,3 +240,29 @@ class TestRefusals:
         order.refresh_from_db()
         assert order.status == status
         assert not Enrollment.objects.exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_two_orders_paid_at_once_enroll_once_and_refund_the_other(fake_stripe):
+    learner, course = make_user(), make_course()
+    orders = [pending_order(learner, course, session_id=f"cs_test_{n}") for n in range(2)]
+    start = threading.Barrier(2)
+
+    def arrive(order):
+        try:
+            start.wait()
+            fulfil(order, paid_session(order))
+        finally:
+            connection.close()
+
+    threads = [threading.Thread(target=arrive, args=(order,)) for order in orders]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    statuses = sorted(Order.objects.values_list("status", flat=True))
+    assert statuses == [OrderStatus.PAID, OrderStatus.REFUNDED]
+    paid = Order.objects.get(status=OrderStatus.PAID)
+    assert Enrollment.objects.get(user=learner, course=course).order == paid
+    assert len(fake_stripe.named("create_refund")) == 1

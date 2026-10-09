@@ -5,10 +5,10 @@ import pytest
 import stripe
 from django.urls import reverse
 
-from commerce.models import OrderStatus
-from enrollments.models import Enrollment
+from commerce.models import Order, OrderStatus
+from enrollments.models import Enrollment, EnrollmentSource
 
-from .helpers import make_course, make_user, paid_session, pending_order
+from .helpers import expired_session, make_course, make_user, paid_session, pending_order
 
 SECRET = "whsec_a-test-signing-secret"
 
@@ -77,7 +77,7 @@ class TestPayload:
         assert response.status_code == 400
         assert response.json() == {"detail": "Malformed payload."}
 
-    @pytest.mark.parametrize("event_type", ["checkout.session.expired", "charge.refunded"])
+    @pytest.mark.parametrize("event_type", ["charge.refunded", "charge.dispute.created"])
     def test_acknowledges_an_event_it_doesnt_handle(self, post_event, event_type):
         response = post_event(event(event_type))
         assert response.status_code == 200
@@ -115,6 +115,64 @@ class TestSessionCompleted:
     )
     def test_acknowledges_a_session_with_no_known_order(self, post_event, metadata):
         response = post_event(event(obj={"id": "cs_test_x", "metadata": metadata}))
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "unknown"}
+
+    def test_asks_for_a_retry_when_a_duplicates_refund_fails(self, post_event, fake_stripe):
+        learner, course = make_user(), make_course()
+        earlier = Order.objects.create(
+            user=learner, status=OrderStatus.PAID, subtotal_cents=100, total_cents=100
+        )
+        Enrollment.objects.create(
+            user=learner, course=course, source=EnrollmentSource.PURCHASE, order=earlier
+        )
+        order = pending_order(learner, course)
+        fake_stripe.fail = stripe.APIConnectionError("Stripe is unreachable")
+
+        response = post_event(event(obj=paid_session(order)))
+
+        assert response.status_code == 503
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PENDING
+
+
+@pytest.mark.django_db
+class TestSessionExpired:
+    def test_expires_a_pending_order(self, post_event):
+        order = pending_order(make_user(), make_course())
+
+        response = post_event(event("checkout.session.expired", expired_session(order)))
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok", "order_status": "expired"}
+        order.refresh_from_db()
+        assert order.status == OrderStatus.EXPIRED
+
+    @pytest.mark.parametrize("status", [OrderStatus.PAID, OrderStatus.REFUNDED])
+    def test_a_settled_order_is_left_alone(self, post_event, status):
+        order = pending_order(make_user(), make_course())
+        order.status = status
+        order.save()
+
+        response = post_event(event("checkout.session.expired", expired_session(order)))
+
+        assert response.json() == {"status": "ok", "order_status": status}
+        order.refresh_from_db()
+        assert order.status == status
+
+    def test_another_orders_session_is_ignored(self, post_event):
+        order = pending_order(make_user(), make_course())
+
+        post_event(event("checkout.session.expired", expired_session(order, id="cs_test_other")))
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PENDING
+
+    def test_acknowledges_a_session_with_no_known_order(self, post_event):
+        response = post_event(
+            event("checkout.session.expired", {"id": "cs_test_x", "metadata": {}})
+        )
 
         assert response.status_code == 200
         assert response.json() == {"status": "unknown"}

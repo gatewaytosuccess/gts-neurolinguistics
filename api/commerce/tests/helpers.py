@@ -38,3 +38,15 @@ def paid_session(order, **fields):
         "metadata": {"order_id": str(order.pk)},
         **fields,
     }
+
+
+def expired_session(order, **fields):
+    """The ``checkout.session.expired`` object Stripe sends for ``order``."""
+    return {
+        "id": order.payment_ref,
+        "object": "checkout.session",
+        "status": "expired",
+        "payment_status": "unpaid",
+        "metadata": {"order_id": str(order.pk)},
+        **fields,
+    }

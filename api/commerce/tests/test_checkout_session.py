@@ -7,7 +7,7 @@ from django.db import connection
 from django.test import Client
 from django.urls import reverse
 
-from commerce.models import OrderStatus
+from commerce.models import Order, OrderStatus
 from enrollments.models import Enrollment, EnrollmentSource
 from users.authentication import ClerkAuthentication
 
@@ -94,6 +94,23 @@ class TestConfirming:
         assert response.status_code == 200
         assert response.json()["status"] == OrderStatus.PENDING
         assert not Enrollment.objects.exists()
+
+    def test_the_order_stays_pending_when_a_duplicates_refund_fails(
+        self, client, fake_stripe, learner, course, order
+    ):
+        earlier = Order.objects.create(
+            user=learner, status=OrderStatus.PAID, subtotal_cents=100, total_cents=100
+        )
+        Enrollment.objects.create(
+            user=learner, course=course, source=EnrollmentSource.PURCHASE, order=earlier
+        )
+        fake_stripe.sessions[order.payment_ref] = paid_session(order)
+        fake_stripe.refuse_refunds = True
+
+        response = confirm(client, order.payment_ref)
+
+        assert response.status_code == 200
+        assert response.json()["status"] == OrderStatus.PENDING
 
     def test_a_settled_order_is_answered_without_asking_stripe(self, client, fake_stripe, order):
         order.status = OrderStatus.PAID

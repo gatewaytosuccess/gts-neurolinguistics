@@ -32,9 +32,11 @@ def start_checkout(user, courses):
     """Creates a ``pending`` order for ``courses`` and its Checkout Session.
 
     Returns the order, whose ``payment_ref`` is the session id, and the session's
-    URL. Raises ``AlreadyEnrolled`` before anything is written, and
-    ``stripe.StripeError`` with nothing written if Stripe refuses. ``courses``
-    must be non-empty and are not checked for being published.
+    URL. The user's other open checkouts for any of ``courses`` are expired.
+    Raises ``AlreadyEnrolled`` before anything is written, and
+    ``stripe.StripeError`` with nothing written if Stripe refuses the new
+    session. ``courses`` must be non-empty and are not checked for being
+    published.
     """
     with transaction.atomic():
         # Serialises one user's checkouts, so two can't each create a Customer.
@@ -60,6 +62,7 @@ def start_checkout(user, courses):
         )
         order.payment_ref = session.id
         order.save(update_fields=["payment_ref", "updated_at"])
+        expire_open_checkouts(user, courses, keep=order)
 
     logger.info("User %s started checkout %s for order %s.", user.pk, session.id, order.pk)
     return order, session.url
@@ -80,6 +83,39 @@ def ensure_customer(user):
     )
     user.save(update_fields=["stripe_customer_id", "updated_at"])
     return user.stripe_customer_id
+
+
+def expire_open_checkouts(user, courses, *, keep):
+    """Expires the sessions of ``user``'s pending orders for any of ``courses``,
+    other than ``keep``, and marks those orders ``expired``.
+
+    A session Stripe won't expire is logged and its order left pending: it may
+    have just been paid, and if not, ``checkout.session.expired`` settles it.
+    Expects ``user`` locked.
+    """
+    open_orders = (
+        Order.objects.select_for_update()
+        .filter(
+            user=user,
+            status=OrderStatus.PENDING,
+            pk__in=OrderItem.objects.filter(course__in=courses).values("order_id"),
+        )
+        .exclude(pk=keep.pk)
+    )
+    for order in open_orders:
+        try:
+            stripe_api.expire_checkout_session(order.payment_ref)
+        except stripe.StripeError:
+            logger.warning(
+                "Could not expire session %s for order %s.",
+                order.payment_ref,
+                order.pk,
+                exc_info=True,
+            )
+            continue
+        order.status = OrderStatus.EXPIRED
+        order.save(update_fields=["status", "updated_at"])
+        logger.info("Expired order %s, replaced by order %s.", order.pk, keep.pk)
 
 
 def session_params(order, items, customer_id, *, landing):
@@ -114,10 +150,16 @@ def fulfil(order, session):
     event's object, or ``to_dict()`` of a retrieved one. Does nothing unless the
     order is pending and the session is this order's and paid, so it is safe to
     call any number of times. An amount or currency that doesn't match the order
-    is logged and enrolls nobody. An enrollment that is already active is left
-    as it is.
+    is logged and enrolls nobody.
+
+    If the user already holds one of the courses through an earlier purchase,
+    the whole order is refunded through Stripe, marked ``refunded``, and nobody
+    is enrolled. Raises ``stripe.StripeError`` with nothing written if that
+    refund fails.
     """
     with transaction.atomic():
+        # Serialises one user's fulfilments, so two orders for a course can't both enroll.
+        User.objects.select_for_update().get(pk=order.user_id)
         order = Order.objects.select_for_update().get(pk=order.pk)
         if order.status != OrderStatus.PENDING:
             return order
@@ -143,13 +185,33 @@ def fulfil(order, session):
             )
             return order
 
-        order.status = OrderStatus.PAID
         order.receipt_url = receipt_url(session)
+        if already_bought(order):
+            refund(order, session)
+            order.status = OrderStatus.REFUNDED
+        else:
+            order.status = OrderStatus.PAID
+            for item in order.items.all():
+                enroll(order, item.course_id)
         order.save(update_fields=["status", "receipt_url", "updated_at"])
-        for item in order.items.all():
-            enroll(order, item.course_id)
 
-    logger.info("Fulfilled order %s for user %s.", order.pk, order.user_id)
+    logger.info("Fulfilled order %s for user %s: %s.", order.pk, order.user_id, order.status)
+    return order
+
+
+def expire(order, session):
+    """Marks a ``pending`` order ``expired`` when ``session``, a
+    ``checkout.session.expired`` object, is its session. Any other order is
+    left as it is, so one already paid stays paid.
+    """
+    with transaction.atomic():
+        order = Order.objects.select_for_update().get(pk=order.pk)
+        if order.status != OrderStatus.PENDING or session.get("id") != order.payment_ref:
+            return order
+        order.status = OrderStatus.EXPIRED
+        order.save(update_fields=["status", "updated_at"])
+
+    logger.info("Order %s expired unpaid.", order.pk)
     return order
 
 
@@ -163,10 +225,10 @@ def confirm(order):
         return order
     try:
         session = stripe_api.retrieve_checkout_session(order.payment_ref).to_dict()
+        return fulfil(order, session)
     except stripe.StripeError:
-        logger.exception("Could not fetch session %s for order %s.", order.payment_ref, order.pk)
+        logger.exception("Could not confirm session %s for order %s.", order.payment_ref, order.pk)
         return order
-    return fulfil(order, session)
 
 
 def receipt_url(session):
@@ -182,8 +244,29 @@ def receipt_url(session):
     return (charge.receipt_url if charge else "") or ""
 
 
+def already_bought(order):
+    """Whether the user holds one of ``order``'s courses through an earlier purchase."""
+    return Enrollment.objects.filter(
+        user_id=order.user_id,
+        course__order_items__order=order,
+        status=EnrollmentStatus.ACTIVE,
+        source=EnrollmentSource.PURCHASE,
+    ).exists()
+
+
+def refund(order, session):
+    logger.warning(
+        "Order %s paid for a course user %s already bought; refunding it.",
+        order.pk,
+        order.user_id,
+    )
+    # The key makes a retry after a rolled-back fulfil return the first refund.
+    stripe_api.create_refund(session.get("payment_intent"), idempotency_key=f"refund-{order.pk}")
+
+
 def enroll(order, course_id):
-    """Expects to run inside ``fulfil``'s transaction."""
+    """Expects to run inside ``fulfil``'s transaction, for a course the user
+    doesn't hold through a purchase."""
     enrollment = (
         Enrollment.objects.select_for_update()
         .filter(user_id=order.user_id, course_id=course_id)
@@ -197,19 +280,10 @@ def enroll(order, course_id):
             order=order,
         )
         return
-    if enrollment.status == EnrollmentStatus.REVOKED:
-        # enrolled_at and progress are kept: buying again picks up where they left off.
-        enrollment.status = EnrollmentStatus.ACTIVE
-        enrollment.revoked_at = None
-        enrollment.source = EnrollmentSource.PURCHASE
-        enrollment.order = order
-        enrollment.save(update_fields=["status", "revoked_at", "source", "order"])
-        return
-    logger.warning(
-        "Order %s paid for course %s, which user %s already holds through enrollment %s (%s).",
-        order.pk,
-        course_id,
-        order.user_id,
-        enrollment.pk,
-        enrollment.source,
-    )
+    # A revoked enrollment or an active grant becomes this order's purchase.
+    # enrolled_at and progress are kept: buying again picks up where they left off.
+    enrollment.status = EnrollmentStatus.ACTIVE
+    enrollment.revoked_at = None
+    enrollment.source = EnrollmentSource.PURCHASE
+    enrollment.order = order
+    enrollment.save(update_fields=["status", "revoked_at", "source", "order"])
