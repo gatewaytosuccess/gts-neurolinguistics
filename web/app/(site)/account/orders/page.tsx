@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { formatDate, formatPrice } from "@/lib/format";
 
+import { AccountTabs } from "../_components/account-tabs";
 import { OrderStatusBadge } from "./_components/order-status-badge";
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default async function OrderHistoryPage() {
     <main className="mx-auto w-full max-w-[1200px] flex-1 px-md py-2xl sm:px-margin">
       <p className="type-label-caps text-accent">Your account</p>
       <h1 className="type-headline-md measure mt-md">Order history</h1>
+      <AccountTabs current="orders" />
 
       {orders === null ? (
         <p className="type-body-sm mt-xl rounded-sm bg-warning-subtle px-sm py-sm text-warning">
