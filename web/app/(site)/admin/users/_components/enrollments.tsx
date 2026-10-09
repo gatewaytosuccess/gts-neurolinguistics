@@ -6,6 +6,7 @@ import type {
   EnrollmentStatus,
 } from "@/lib/api";
 
+import { formatDate } from "../../_lib/format";
 import { StatusBadge as CourseStatusBadge } from "../../courses/_components/status-badge";
 import { SOURCE_LABELS } from "../_lib/enrollment";
 import {
@@ -13,7 +14,6 @@ import {
   restoreEnrollment,
   revokeEnrollment,
 } from "../_lib/enrollment-actions";
-import { formatDate } from "../_lib/format";
 import {
   GrantForm,
   RestoreButton,

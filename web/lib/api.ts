@@ -1006,7 +1006,18 @@ export async function fetchAdminUsers({
   return apiFetch<Paginated<AdminUserSummary>>(`/api/admin/users/${query}`);
 }
 
-export type OrderStatus = "pending" | "paid" | "refunded" | "expired";
+export const ORDER_STATUSES = [
+  "pending",
+  "paid",
+  "refunded",
+  "expired",
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+export function isOrderStatus(value: unknown): value is OrderStatus {
+  return ORDER_STATUSES.includes(value as OrderStatus);
+}
 
 export type AdminUserOrder = {
   id: string;
@@ -1179,4 +1190,39 @@ export async function restoreAdminEnrollment(
     `/api/admin/enrollments/${encodeURIComponent(id)}/restore/`,
     { method: "POST" },
   );
+}
+
+export type AdminOrderSummary = {
+  id: string;
+  created_at: string;
+  status: OrderStatus;
+  total_cents: number;
+  /** `name` is blank when Clerk has no name for them. */
+  buyer: { id: string; name: string; email: string };
+  /** By course title. */
+  items: { title: string }[];
+};
+
+/**
+ * Every order, whatever its status, newest first, 20 per page. `q` matches the
+ * buyer's name or email, or an exact order id; a blank `q` is no filter.
+ * Throws `ApiError` with status 404 for a page past the last, 403 for anyone
+ * but an admin, and on any other failure.
+ */
+export async function fetchAdminOrders({
+  q = "",
+  status,
+  page = 1,
+}: {
+  q?: string;
+  status?: OrderStatus;
+  page?: number;
+} = {}): Promise<Paginated<AdminOrderSummary>> {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set("q", q.trim());
+  if (status) params.set("status", status);
+  if (page > 1) params.set("page", String(page));
+
+  const query = params.size ? `?${params}` : "";
+  return apiFetch<Paginated<AdminOrderSummary>>(`/api/admin/orders/${query}`);
 }

@@ -1,16 +1,24 @@
 import logging
+import uuid
 
 import stripe
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from courses.models import Course
+from users.permissions import IsAdmin
 
 from .checkout import AlreadyEnrolled, confirm, start_checkout
-from .models import Order, OrderStatus
-from .serializers import OrderReceiptSerializer, OrderSerializer
+from .models import Order, OrderItem, OrderStatus
+from .serializers import (
+    AdminOrderFiltersSerializer,
+    AdminOrderListSerializer,
+    OrderReceiptSerializer,
+    OrderSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,3 +96,40 @@ class MyOrderDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return my_orders(self.request.user)
+
+
+class AdminOrderListView(generics.ListAPIView):
+    """Every order, whatever its status, newest first.
+
+    ``q`` matches the buyer's name or email case-insensitively, or an exact
+    order id; blank means no filter. ``status`` takes one value; an unknown
+    value is a 400. A page past the last is a 404.
+    """
+
+    serializer_class = AdminOrderListSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        filters = AdminOrderFiltersSerializer(data=self.request.query_params)
+        filters.is_valid(raise_exception=True)
+
+        orders = Order.objects.select_related("user").prefetch_related(
+            Prefetch(
+                "items",
+                queryset=OrderItem.objects.select_related("course").order_by("course__title"),
+            )
+        )
+
+        query = self.request.query_params.get("q", "").strip()
+        if query:
+            match = Q(user__name__icontains=query) | Q(user__email__icontains=query)
+            try:
+                match |= Q(pk=uuid.UUID(query))
+            except ValueError:
+                pass
+            orders = orders.filter(match)
+
+        if status_filter := filters.validated_data.get("status"):
+            orders = orders.filter(status=status_filter)
+
+        return orders.order_by("-created_at")

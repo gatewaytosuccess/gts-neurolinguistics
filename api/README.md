@@ -114,6 +114,9 @@ enrollments: grant those in Django admin.
 - `POST /api/admin/lessons/<id>/uploads/` — a presigned POST for a new `video` (MP4, up to 2 GB)
   or `slides` (PDF, up to 100 MB), by `kind`; `PATCH` its `video_key` or `slides_key` onto the
   lesson to save it, or a blank key to remove it; admins only
+- `GET /api/admin/orders/` — every order, newest first, with its buyer and course titles; `q`
+  matches the buyer's name or email or an exact order id, `status` takes one order status and
+  answers 400 for any other; admins only
 - `GET /api/learn/<slug>/` — a course's outline for the lesson viewer: every module and lesson in
   order, each lesson `locked` or not and `completed` or not, the caller's `access` and their
   completed and total lesson counts; signing in is optional. Only an enrolled caller sees anything

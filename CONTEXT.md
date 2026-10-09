@@ -159,7 +159,7 @@ Turning a paid order into enrollments. Happens once per order however many times
 _Avoid_: Process, complete, provision
 
 **Refund**:
-Returning an order's payment in full, which makes the order refunded. It never revokes access. A partial refund is a goodwill gesture and leaves the order paid.
+Returning money from a paid order. Once all of it has gone back, however many refunds that took, the order is **refunded**; until then it stays paid, and what has gone back so far is a **partial refund** (a goodwill gesture). An admin refunding from the admin area returns whatever remains, and gives a reason. A refund never revokes access.
 _Avoid_: Cancel, chargeback (a dispute raised through the card issuer, not a refund)
 
 ### Marketing
