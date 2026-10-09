@@ -10,7 +10,8 @@ from commerce import stripe_api
 class FakeStripe:
     """Stands in for ``commerce.stripe_api``. ``calls`` records each call as
     ``(name, args, kwargs)``; set ``fail`` to an exception to raise it from every call.
-    ``sessions`` maps a session id to what retrieving it returns, as a dict.
+    ``sessions`` maps a session id to what retrieving it returns, as a dict, and
+    ``payment_intents`` a PaymentIntent id to its metadata.
     Expiring a session in ``unexpirable`` fails as Stripe does for a completed
     one, and every refund fails while ``refuse_refunds`` is set.
     """
@@ -18,6 +19,7 @@ class FakeStripe:
     def __init__(self):
         self.calls = []
         self.sessions = {}
+        self.payment_intents = {}
         self.unexpirable = set()
         self.refuse_refunds = False
         self.fail = None
@@ -68,6 +70,12 @@ class FakeStripe:
         self._record("retrieve_payment_intent", payment_intent_id)
         return SimpleNamespace(latest_charge=SimpleNamespace(receipt_url=self.receipt_url))
 
+    def retrieve_payment_intent_metadata(self, payment_intent_id):
+        self._record("retrieve_payment_intent_metadata", payment_intent_id)
+        if payment_intent_id not in self.payment_intents:
+            raise stripe.InvalidRequestError(f"No such payment_intent: '{payment_intent_id}'", "id")
+        return dict(self.payment_intents[payment_intent_id])
+
 
 @pytest.fixture
 def fake_stripe(monkeypatch):
@@ -80,6 +88,7 @@ def fake_stripe(monkeypatch):
         "expire_checkout_session",
         "create_refund",
         "retrieve_payment_intent",
+        "retrieve_payment_intent_metadata",
     ):
         monkeypatch.setattr(stripe_api, name, getattr(fake, name))
     return fake

@@ -14,7 +14,8 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .checkout import expire, fulfil
+from . import stripe_api
+from .checkout import expire, fulfil, record_refund
 from .models import Order
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,8 @@ def stripe_webhook(request):
     handler = {
         "checkout.session.completed": _handle_session_completed,
         "checkout.session.expired": _handle_session_expired,
+        "charge.refunded": _handle_charge_refunded,
+        "charge.dispute.created": _handle_dispute_created,
     }.get(event_type)
     if handler is None:
         logger.debug("Ignoring unhandled Stripe event %s.", event_type)
@@ -80,12 +83,63 @@ def _handle_session_expired(session):
     return Response({"status": "ok", "order_status": order.status})
 
 
+def _handle_charge_refunded(charge):
+    try:
+        order = _payment_intent_order(charge.get("payment_intent"))
+    except stripe.StripeError:
+        logger.exception(
+            "Could not look up refunded charge %s; asking Stripe to retry.", charge.get("id")
+        )
+        return Response({"detail": "Stripe is unavailable."}, status=503)
+    if order is None:
+        logger.error("Refunded charge %s names no known order.", charge.get("id"))
+        return Response({"status": "unknown"})
+
+    order = record_refund(order, charge)
+    return Response({"status": "ok", "order_status": order.status})
+
+
+def _handle_dispute_created(dispute):
+    try:
+        order = _payment_intent_order(dispute.get("payment_intent"))
+    except stripe.StripeError:
+        logger.exception("Could not look up the order for dispute %s.", dispute.get("id"))
+        order = None
+    logger.error(
+        "Dispute %s opened on charge %s (order %s): %s %s, reason %s.",
+        dispute.get("id"),
+        dispute.get("charge"),
+        order.pk if order else "unknown",
+        dispute.get("amount"),
+        dispute.get("currency"),
+        dispute.get("reason"),
+    )
+    return Response({"status": "ok"})
+
+
 def _session_order(session):
-    order_id = (session.get("metadata") or {}).get("order_id")
-    order = Order.objects.filter(pk=order_id).first() if _is_uuid(order_id) else None
+    order = _order(session.get("metadata"))
     if order is None:
         logger.error("Checkout session %s names no known order.", session.get("id"))
     return order
+
+
+def _payment_intent_order(payment_intent_id):
+    """``None`` when there's no PaymentIntent or Stripe doesn't know it. Raises
+    ``stripe.StripeError`` for any other failed lookup."""
+    if not payment_intent_id:
+        return None
+    try:
+        metadata = stripe_api.retrieve_payment_intent_metadata(payment_intent_id)
+    except stripe.InvalidRequestError:
+        logger.warning("Stripe has no PaymentIntent %s.", payment_intent_id, exc_info=True)
+        return None
+    return _order(metadata)
+
+
+def _order(metadata):
+    order_id = (metadata or {}).get("order_id")
+    return Order.objects.filter(pk=order_id).first() if _is_uuid(order_id) else None
 
 
 def _is_uuid(value):

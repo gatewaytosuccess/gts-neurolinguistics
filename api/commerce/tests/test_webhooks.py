@@ -6,9 +6,16 @@ import stripe
 from django.urls import reverse
 
 from commerce.models import Order, OrderStatus
-from enrollments.models import Enrollment, EnrollmentSource
+from enrollments.models import Enrollment, EnrollmentSource, EnrollmentStatus
 
-from .helpers import expired_session, make_course, make_user, paid_session, pending_order
+from .helpers import (
+    expired_session,
+    make_course,
+    make_user,
+    paid_session,
+    pending_order,
+    refunded_charge,
+)
 
 SECRET = "whsec_a-test-signing-secret"
 
@@ -77,7 +84,7 @@ class TestPayload:
         assert response.status_code == 400
         assert response.json() == {"detail": "Malformed payload."}
 
-    @pytest.mark.parametrize("event_type", ["charge.refunded", "charge.dispute.created"])
+    @pytest.mark.parametrize("event_type", ["customer.created", "charge.succeeded"])
     def test_acknowledges_an_event_it_doesnt_handle(self, post_event, event_type):
         response = post_event(event(event_type))
         assert response.status_code == 200
@@ -176,3 +183,146 @@ class TestSessionExpired:
 
         assert response.status_code == 200
         assert response.json() == {"status": "unknown"}
+
+
+def settled_order(status=OrderStatus.PAID):
+    """An order in ``status`` whose charge is ``pi_test``, with its enrollment."""
+    learner, course = make_user(), make_course()
+    order = pending_order(learner, course)
+    order.status = status
+    order.save()
+    Enrollment.objects.create(
+        user=learner, course=course, source=EnrollmentSource.PURCHASE, order=order
+    )
+    return order
+
+
+@pytest.mark.django_db
+class TestChargeRefunded:
+    @pytest.fixture
+    def order(self, fake_stripe):
+        order = settled_order()
+        fake_stripe.payment_intents["pi_test"] = {"order_id": str(order.pk)}
+        return order
+
+    def test_a_full_refund_marks_the_order_refunded(self, post_event, order):
+        response = post_event(event("charge.refunded", refunded_charge()))
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok", "order_status": "refunded"}
+        order.refresh_from_db()
+        assert order.status == OrderStatus.REFUNDED
+
+    def test_a_full_refund_leaves_the_enrollment_active(self, post_event, order):
+        post_event(event("charge.refunded", refunded_charge()))
+
+        enrollment = Enrollment.objects.get(order=order)
+        assert enrollment.status == EnrollmentStatus.ACTIVE
+
+    def test_a_partial_refund_leaves_the_order_paid(self, post_event, order):
+        response = post_event(event("charge.refunded", refunded_charge(amount_refunded=5000)))
+
+        assert response.json() == {"status": "ok", "order_status": "paid"}
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PAID
+
+    def test_a_redelivery_changes_nothing(self, post_event, order):
+        body = event("charge.refunded", refunded_charge())
+        post_event(body)
+
+        response = post_event(body)
+
+        assert response.json() == {"status": "ok", "order_status": "refunded"}
+
+    def test_a_duplicate_payments_automatic_refund_is_already_settled(
+        self, post_event, fake_stripe
+    ):
+        order = settled_order(OrderStatus.REFUNDED)
+        fake_stripe.payment_intents["pi_test"] = {"order_id": str(order.pk)}
+
+        response = post_event(event("charge.refunded", refunded_charge()))
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok", "order_status": "refunded"}
+
+    def test_a_pending_order_is_left_alone(self, post_event, fake_stripe):
+        order = pending_order(make_user(), make_course())
+        fake_stripe.payment_intents["pi_test"] = {"order_id": str(order.pk)}
+
+        post_event(event("charge.refunded", refunded_charge()))
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PENDING
+
+    def test_finds_the_order_through_the_payment_intent(self, post_event, fake_stripe, order):
+        post_event(event("charge.refunded", refunded_charge()))
+
+        assert fake_stripe.named("retrieve_payment_intent_metadata") == [
+            ("retrieve_payment_intent_metadata", ("pi_test",), {})
+        ]
+
+    @pytest.mark.parametrize(
+        "charge, metadata",
+        [
+            (refunded_charge(payment_intent=None), {}),
+            (refunded_charge(payment_intent="pi_unknown"), {}),
+            (refunded_charge(), {}),
+            (refunded_charge(), {"order_id": "not-a-uuid"}),
+            (refunded_charge(), {"order_id": "00000000-0000-0000-0000-000000000000"}),
+        ],
+        ids=["no-payment-intent", "unknown-payment-intent", "missing", "malformed", "unknown"],
+    )
+    def test_acknowledges_a_charge_with_no_known_order(
+        self, post_event, fake_stripe, charge, metadata
+    ):
+        fake_stripe.payment_intents["pi_test"] = metadata
+
+        response = post_event(event("charge.refunded", charge))
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "unknown"}
+
+    def test_asks_for_a_retry_when_stripe_is_unreachable(self, post_event, fake_stripe, order):
+        fake_stripe.fail = stripe.APIConnectionError("Stripe is unreachable")
+
+        response = post_event(event("charge.refunded", refunded_charge()))
+
+        assert response.status_code == 503
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PAID
+
+
+@pytest.mark.django_db
+class TestDisputeCreated:
+    def dispute(self):
+        return {
+            "id": "dp_test",
+            "object": "dispute",
+            "amount": 12900,
+            "currency": "usd",
+            "charge": "ch_test",
+            "payment_intent": "pi_test",
+            "reason": "fraudulent",
+        }
+
+    def test_logs_the_dispute_with_its_order(self, post_event, fake_stripe, caplog):
+        order = settled_order()
+        fake_stripe.payment_intents["pi_test"] = {"order_id": str(order.pk)}
+
+        response = post_event(event("charge.dispute.created", self.dispute()))
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok"}
+        assert f"dp_test opened on charge ch_test (order {order.pk})" in caplog.text
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PAID
+
+    def test_acknowledges_a_dispute_whose_order_cant_be_found(
+        self, post_event, fake_stripe, caplog
+    ):
+        fake_stripe.fail = stripe.APIConnectionError("Stripe is unreachable")
+
+        response = post_event(event("charge.dispute.created", self.dispute()))
+
+        assert response.status_code == 200
+        assert "(order unknown)" in caplog.text

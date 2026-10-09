@@ -136,6 +136,8 @@ def session_params(order, items, customer_id, *, landing):
             for item in items
         ],
         "metadata": {"order_id": str(order.pk)},
+        # Charge events carry only the PaymentIntent, so it names the order too.
+        "payment_intent_data": {"metadata": {"order_id": str(order.pk)}},
         "expires_at": int(time.time()) + SESSION_LIFETIME_SECONDS,
         # Stripe substitutes {CHECKOUT_SESSION_ID} on redirect.
         "success_url": f"{settings.WEB_APP_URL}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
@@ -212,6 +214,30 @@ def expire(order, session):
         order.save(update_fields=["status", "updated_at"])
 
     logger.info("Order %s expired unpaid.", order.pk)
+    return order
+
+
+def record_refund(order, charge):
+    """Marks a ``paid`` order ``refunded`` when ``charge``, a ``charge.refunded``
+    object, has been refunded in full. A partial refund, or an order in any
+    other status, leaves the order as it is. Enrollments are never touched.
+    """
+    if charge.get("amount_refunded") != charge.get("amount"):
+        logger.info(
+            "Charge %s for order %s was partly refunded; the order stays as it is.",
+            charge.get("id"),
+            order.pk,
+        )
+        return order
+
+    with transaction.atomic():
+        order = Order.objects.select_for_update().get(pk=order.pk)
+        if order.status != OrderStatus.PAID:
+            return order
+        order.status = OrderStatus.REFUNDED
+        order.save(update_fields=["status", "updated_at"])
+
+    logger.info("Order %s was refunded in full.", order.pk)
     return order
 
 
