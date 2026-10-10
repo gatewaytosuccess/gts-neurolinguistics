@@ -139,8 +139,16 @@ Unique: `(user_id, lesson_id)` — one progress row per learner per lesson.
 | total_cents | int | not null | |
 | payment_ref | string | nullable | Stripe Checkout session id |
 | receipt_url | string | nullable | Stripe's hosted receipt, saved when the order is fulfilled |
+| payment_intent_id | string | not null, default `''` | Stripe PaymentIntent that paid for the order, saved when it is fulfilled |
+| refunded_cents | int | not null, default `0` | How much has been refunded, partial refunds included |
+| refunded_at | timestamp | nullable | Set once the order is refunded in full |
+| refunded_by | uuid | FK → USERS.id, nullable | Admin who refunded it from the admin area; null for a refund made in Stripe or an automatic one |
+| refund_reason | string | not null, default `''` | Admin audit note, up to 500 characters; blank unless `refunded_by` is set |
 | created_at | timestamp | not null | |
 | updated_at | timestamp | not null | |
+
+- `charge.refunded` keeps `refunded_cents` in step with Stripe on every event, whatever the order's status. Once the charge is refunded in full it sets `refunded_at` and marks a `paid` order `refunded`. Enrollments are never touched by a refund.
+- A purchase of a course the buyer already bought is refunded automatically when it is fulfilled, ending `refunded` with `refunded_cents` and `refunded_at` set.
 
 ### ORDER_ITEMS
 

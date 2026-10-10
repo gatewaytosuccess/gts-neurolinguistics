@@ -222,8 +222,15 @@ function OrderTable({ orders }: { orders: AdminOrderSummary[] }) {
                   ))}
                 </ul>
               </td>
-              <td className="type-data-md px-sm py-sm text-right">
-                {formatPrice(order.total_cents)}
+              <td className="px-sm py-sm text-right">
+                <span className="type-data-md block">
+                  {formatPrice(order.total_cents)}
+                </span>
+                {order.status === "paid" && order.refunded_cents > 0 && (
+                  <span className="type-caption block whitespace-nowrap text-meta-text">
+                    {formatPrice(order.refunded_cents)} refunded
+                  </span>
+                )}
               </td>
               <td className="px-sm py-sm">
                 <OrderStatusBadge status={order.status} />
