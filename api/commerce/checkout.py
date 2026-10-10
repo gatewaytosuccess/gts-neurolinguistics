@@ -11,6 +11,7 @@ from urllib.parse import quote
 import stripe
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 
 from enrollments.models import Enrollment, EnrollmentSource, EnrollmentStatus
 from users.models import User
@@ -187,15 +188,27 @@ def fulfil(order, session):
             )
             return order
 
+        order.payment_intent_id = session.get("payment_intent") or ""
         order.receipt_url = receipt_url(session)
         if already_bought(order):
             refund(order, session)
             order.status = OrderStatus.REFUNDED
+            order.refunded_cents = order.total_cents
+            order.refunded_at = timezone.now()
         else:
             order.status = OrderStatus.PAID
             for item in order.items.all():
                 enroll(order, item.course_id)
-        order.save(update_fields=["status", "receipt_url", "updated_at"])
+        order.save(
+            update_fields=[
+                "status",
+                "payment_intent_id",
+                "receipt_url",
+                "refunded_cents",
+                "refunded_at",
+                "updated_at",
+            ]
+        )
 
     logger.info("Fulfilled order %s for user %s: %s.", order.pk, order.user_id, order.status)
     return order
@@ -218,26 +231,41 @@ def expire(order, session):
 
 
 def record_refund(order, charge):
-    """Marks a ``paid`` order ``refunded`` when ``charge``, a ``charge.refunded``
-    object, has been refunded in full. A partial refund, or an order in any
-    other status, leaves the order as it is. Enrollments are never touched.
+    """Records how much of ``charge``, a ``charge.refunded`` object, has gone
+    back, whatever the order's status. Once all of it has, sets ``refunded_at``
+    if unset and marks a ``paid`` order ``refunded``. Saves nothing when there
+    is nothing new. Enrollments are never touched.
     """
-    if charge.get("amount_refunded") != charge.get("amount"):
-        logger.info(
-            "Charge %s for order %s was partly refunded; the order stays as it is.",
-            charge.get("id"),
-            order.pk,
-        )
+    amount_refunded = charge.get("amount_refunded")
+    if not isinstance(amount_refunded, int):
+        logger.error("Refunded charge %s has no amount_refunded; ignoring it.", charge.get("id"))
         return order
+    in_full = amount_refunded == charge.get("amount")
 
     with transaction.atomic():
         order = Order.objects.select_for_update().get(pk=order.pk)
-        if order.status != OrderStatus.PAID:
+        changed = []
+        # amount_refunded only grows, and events can arrive out of order.
+        if amount_refunded > order.refunded_cents:
+            order.refunded_cents = amount_refunded
+            changed.append("refunded_cents")
+        if in_full and order.refunded_at is None:
+            order.refunded_at = timezone.now()
+            changed.append("refunded_at")
+        if in_full and order.status == OrderStatus.PAID:
+            order.status = OrderStatus.REFUNDED
+            changed.append("status")
+        if not changed:
             return order
-        order.status = OrderStatus.REFUNDED
-        order.save(update_fields=["status", "updated_at"])
+        order.save(update_fields=[*changed, "updated_at"])
 
-    logger.info("Order %s was refunded in full.", order.pk)
+    logger.info(
+        "Order %s has %s of %s cents refunded (%s).",
+        order.pk,
+        order.refunded_cents,
+        order.total_cents,
+        order.status,
+    )
     return order
 
 

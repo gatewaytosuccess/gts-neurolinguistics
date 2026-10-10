@@ -75,6 +75,20 @@ class Order(BaseModel):
         max_length=255, blank=True, help_text="Stripe Checkout session id."
     )
     receipt_url = models.URLField(max_length=500, blank=True)
+    payment_intent_id = models.CharField(max_length=255, blank=True)
+    refunded_cents = models.PositiveIntegerField(default=0)
+    refunded_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the order was refunded in full."
+    )
+    refunded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="refunded_orders",
+        help_text="Blank for a refund made in Stripe or an automatic one.",
+    )
+    refund_reason = models.CharField(max_length=500, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "orders"

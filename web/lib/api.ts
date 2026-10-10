@@ -1197,6 +1197,8 @@ export type AdminOrderSummary = {
   created_at: string;
   status: OrderStatus;
   total_cents: number;
+  /** Partial refunds included. */
+  refunded_cents: number;
   /** `name` is blank when Clerk has no name for them. */
   buyer: { id: string; name: string; email: string };
   /** By course title. */

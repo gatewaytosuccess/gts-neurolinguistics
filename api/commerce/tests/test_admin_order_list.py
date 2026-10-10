@@ -188,6 +188,7 @@ class TestPayload:
             "created_at": item["created_at"],
             "status": "refunded",
             "total_cents": 17800,
+            "refunded_cents": 0,
             "buyer": {"id": str(ada.pk), "name": "Ada Lovelace", "email": "ada@example.com"},
             "items": [{"title": "Foundations"}, {"title": "Syntax"}],
         }

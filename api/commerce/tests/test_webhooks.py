@@ -213,6 +213,14 @@ class TestChargeRefunded:
         order.refresh_from_db()
         assert order.status == OrderStatus.REFUNDED
 
+    def test_a_full_refund_records_the_amount_and_time_but_no_admin(self, post_event, order):
+        post_event(event("charge.refunded", refunded_charge()))
+
+        order.refresh_from_db()
+        assert order.refunded_cents == order.total_cents
+        assert order.refunded_at is not None
+        assert (order.refunded_by, order.refund_reason) == (None, "")
+
     def test_a_full_refund_leaves_the_enrollment_active(self, post_event, order):
         post_event(event("charge.refunded", refunded_charge()))
 
@@ -225,14 +233,40 @@ class TestChargeRefunded:
         assert response.json() == {"status": "ok", "order_status": "paid"}
         order.refresh_from_db()
         assert order.status == OrderStatus.PAID
+        assert (order.refunded_cents, order.refunded_at) == (5000, None)
+
+    def test_a_second_partial_refund_adds_to_the_first(self, post_event, order):
+        post_event(event("charge.refunded", refunded_charge(amount_refunded=500)))
+        post_event(event("charge.refunded", refunded_charge(amount_refunded=1500)))
+
+        order.refresh_from_db()
+        assert (order.status, order.refunded_cents) == (OrderStatus.PAID, 1500)
+
+    def test_partial_refunds_that_add_up_mark_the_order_refunded(self, post_event, order):
+        post_event(event("charge.refunded", refunded_charge(amount_refunded=500)))
+        post_event(event("charge.refunded", refunded_charge()))
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.REFUNDED
+        assert order.refunded_cents == order.total_cents
+        assert order.refunded_at is not None
+
+    def test_an_event_arriving_late_never_lowers_the_amount(self, post_event, order):
+        post_event(event("charge.refunded", refunded_charge(amount_refunded=1500)))
+        post_event(event("charge.refunded", refunded_charge(amount_refunded=500)))
+
+        order.refresh_from_db()
+        assert order.refunded_cents == 1500
 
     def test_a_redelivery_changes_nothing(self, post_event, order):
         body = event("charge.refunded", refunded_charge())
         post_event(body)
+        first = Order.objects.values().get(pk=order.pk)
 
         response = post_event(body)
 
         assert response.json() == {"status": "ok", "order_status": "refunded"}
+        assert Order.objects.values().get(pk=order.pk) == first
 
     def test_a_duplicate_payments_automatic_refund_is_already_settled(
         self, post_event, fake_stripe
@@ -245,14 +279,22 @@ class TestChargeRefunded:
         assert response.status_code == 200
         assert response.json() == {"status": "ok", "order_status": "refunded"}
 
-    def test_a_pending_order_is_left_alone(self, post_event, fake_stripe):
+    def test_a_pending_order_stays_pending_with_the_refund_recorded(self, post_event, fake_stripe):
         order = pending_order(make_user(), make_course())
         fake_stripe.payment_intents["pi_test"] = {"order_id": str(order.pk)}
 
-        post_event(event("charge.refunded", refunded_charge()))
+        post_event(event("charge.refunded", refunded_charge(amount_refunded=500)))
 
         order.refresh_from_db()
-        assert order.status == OrderStatus.PENDING
+        assert (order.status, order.refunded_cents) == (OrderStatus.PENDING, 500)
+
+    def test_a_charge_without_amount_refunded_changes_nothing(self, post_event, order):
+        before = Order.objects.values().get(pk=order.pk)
+
+        response = post_event(event("charge.refunded", refunded_charge(amount_refunded=None)))
+
+        assert response.status_code == 200
+        assert Order.objects.values().get(pk=order.pk) == before
 
     def test_finds_the_order_through_the_payment_intent(self, post_event, fake_stripe, order):
         post_event(event("charge.refunded", refunded_charge()))

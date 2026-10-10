@@ -63,5 +63,5 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ["id", "created_at", "status", "total_cents", "buyer", "items"]
+        fields = ["id", "created_at", "status", "total_cents", "refunded_cents", "buyer", "items"]
         read_only_fields = fields

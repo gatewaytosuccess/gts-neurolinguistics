@@ -19,8 +19,8 @@ class CartItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "status", "total_cents", "created_at")
     list_filter = ("status",)
-    search_fields = ("id", "user__email", "payment_ref")
-    raw_id_fields = ("user", "coupon")
+    search_fields = ("id", "user__email", "payment_ref", "payment_intent_id")
+    raw_id_fields = ("user", "coupon", "refunded_by")
     inlines = [OrderItemInline]
 
 

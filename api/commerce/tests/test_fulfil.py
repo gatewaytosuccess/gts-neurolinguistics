@@ -62,6 +62,18 @@ class TestFulfilling:
             ("retrieve_payment_intent", ("pi_test",), {})
         ]
 
+    def test_saves_the_payment_intent(self, fake_stripe, order):
+        fulfil(order, paid_session(order))
+
+        order.refresh_from_db()
+        assert order.payment_intent_id == "pi_test"
+
+    def test_records_no_refund(self, fake_stripe, order):
+        fulfil(order, paid_session(order))
+
+        order.refresh_from_db()
+        assert (order.refunded_cents, order.refunded_at) == (0, None)
+
     def test_creates_an_enrollment(self, fake_stripe, learner, course, order):
         fulfil(order, paid_session(order))
 
@@ -176,6 +188,15 @@ class TestAnEarlierPurchase:
             ("create_refund", ("pi_test",), {"idempotency_key": f"refund-{order.pk}"})
         ]
 
+    def test_records_the_refund_with_no_admin(self, fake_stripe, bought, order):
+        fulfil(order, paid_session(order))
+
+        order.refresh_from_db()
+        assert order.payment_intent_id == "pi_test"
+        assert order.refunded_cents == order.total_cents
+        assert order.refunded_at is not None
+        assert (order.refunded_by, order.refund_reason) == (None, "")
+
     def test_leaves_the_existing_enrollment_as_it_is(self, fake_stripe, bought, order):
         before = list(Enrollment.objects.values())
 
@@ -199,6 +220,7 @@ class TestAnEarlierPurchase:
 
         order.refresh_from_db()
         assert order.status == OrderStatus.PENDING
+        assert (order.payment_intent_id, order.refunded_cents) == ("", 0)
 
 
 class TestRefusals:
