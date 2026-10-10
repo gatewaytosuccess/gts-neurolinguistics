@@ -12,19 +12,19 @@ import {
   type AdminUserDetail,
   type AdminUserOrder,
   type AdminUserReview,
-  type OrderStatus,
 } from "@/lib/api";
 import { Stars } from "@/components/stars";
 import { formatPrice } from "@/lib/format";
 
+import { formatDate } from "../../_lib/format";
 import { requireAdmin } from "../../_lib/require-admin";
+import { ORDER_STATUS_LABELS } from "../../orders/_components/order-status-badge";
 import { Enrollments } from "../_components/enrollments";
 import { RoleControl } from "../_components/role-control";
 import { StatusBadge } from "../_components/status-badge";
 import { SuspensionControl } from "../_components/suspension-control";
 import { UserAvatar } from "../_components/user-avatar";
 import { fetchEveryAdminCourse } from "../_lib/courses";
-import { formatDate } from "../_lib/format";
 import { changeUserRole } from "../_lib/role-actions";
 
 export async function generateMetadata({
@@ -204,13 +204,6 @@ function Access({ user, isSelf }: { user: AdminUserDetail; isSelf: boolean }) {
     </dl>
   );
 }
-
-const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: "Pending",
-  paid: "Paid",
-  refunded: "Refunded",
-  expired: "Expired",
-};
 
 function OrderTable({ orders }: { orders: AdminUserOrder[] }) {
   const headerClassName = "type-label-md px-sm py-sm text-accent";

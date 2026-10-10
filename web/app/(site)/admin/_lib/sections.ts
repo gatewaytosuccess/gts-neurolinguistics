@@ -25,7 +25,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     label: "Orders",
     href: "/admin/orders",
     description: "Review purchases and issue refunds.",
-    available: false,
+    available: true,
   },
   {
     label: "Coupons",

@@ -15,5 +15,6 @@ urlpatterns = [
         views.MyOrderDetailView.as_view(),
         name="user-me-order",
     ),
+    path("admin/orders/", views.AdminOrderListView.as_view(), name="admin-order-list"),
     path("webhooks/stripe/", webhooks.stripe_webhook, name="stripe-webhook"),
 ]

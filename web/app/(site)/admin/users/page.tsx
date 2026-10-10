@@ -17,11 +17,12 @@ import {
 } from "@/lib/api";
 
 import { ListPagination } from "../_components/list-pagination";
+import { formatDate } from "../_lib/format";
 import { firstValue, parsePage } from "../_lib/list-params";
 import { requireAdmin } from "../_lib/require-admin";
 import { STATUS_LABELS, StatusBadge } from "./_components/status-badge";
 import { UserAvatar } from "./_components/user-avatar";
-import { formatDate, ROLE_LABELS } from "./_lib/format";
+import { ROLE_LABELS } from "./_lib/format";
 
 export const metadata: Metadata = {
   title: "Users · Admin",
